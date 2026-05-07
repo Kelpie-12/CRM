@@ -18,16 +18,19 @@ namespace CRM.Services.Implementations
 
         public Task<string> ForgotPassword(string username)
         {
+
+
             throw new NotImplementedException();
         }
 
-        public Task<string> Login(string username, string password)
+        public async Task<string> Login(string username, string password)
         {
-            throw new NotImplementedException();
+            return await _userRepository.Login(username, password);
         }
 
         public Task<string> Logout()
         {
+
             throw new NotImplementedException();
         }
     }

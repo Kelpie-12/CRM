@@ -21,6 +21,13 @@ namespace CRM.Controllers
             return Content(res);
         }
 
+        [HttpGet]
+        [Route("/Login")]
+        public async Task<IActionResult> Login(string username, string password)
+        {
+            string res = await _userServices.Login(username, password);
+            return Content(res);
+        }
 
     }
 }
