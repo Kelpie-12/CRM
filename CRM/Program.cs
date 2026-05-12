@@ -1,6 +1,11 @@
+using System.Reflection;
+using System.Text;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using System.Reflection;
+using CRM.Services;
+using CRM.Services.Implementations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CRM
 {
@@ -36,6 +41,19 @@ namespace CRM
             });
 
             builder.Services.AddDistributedMemoryCache();
+            builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
+            builder.Services.AddAuth(builder.Configuration);
+            /*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //    .AddJwtBearer(o => {
+            //        o.TokenValidationParameters = new TokenValidationParameters()
+            //        {
+            //            ValidateIssuer = false,
+            //            ValidateAudience = false,
+            //            ValidateLifetime = true,
+            //            ValidateIssuerSigningKey = true,
+            //            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("securetikeyasdasdasdasdasdasdzxcfgdshdfs"))
+            //        };
+               });*/ 
             //builder.WebHost.UseUrls("http://localhos:8080");
 
             var app = builder.Build();
@@ -46,11 +64,12 @@ namespace CRM
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            app.UseHttpsRedirection();
+           // app.UseHttpsRedirection();
 
+            //app.UseRouting();
             app.UseAuthorization();
+            app.UseAuthentication();
             app.UseStaticFiles();
-
             app.MapControllers();
 
             app.Run();

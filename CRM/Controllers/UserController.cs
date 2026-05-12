@@ -14,7 +14,7 @@ namespace CRM.Controllers
         }
 
         [HttpPost]
-        [Route("/CreateUser")]
+        [Route("CreateUser")]//регистрация
         public async Task<IActionResult> CreateUser(string username, string password, string firstName, string lastName)
         {
           string res=  await _userServices.CreateUser(username, password, firstName, lastName);
@@ -22,12 +22,13 @@ namespace CRM.Controllers
         }
 
         [HttpGet]
-        [Route("/Login")]
+        [Route("Login")]
         public async Task<IActionResult> Login(string username, string password)
         {
             string res = await _userServices.Login(username, password);
             return Content(res);
         }
+
 
     }
 }

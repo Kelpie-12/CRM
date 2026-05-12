@@ -1,19 +1,34 @@
 ﻿
+using CRM.Model;
 using CRM.Repositories;
+using Microsoft.AspNetCore.Identity;
 
 namespace CRM.Services.Implementations
 {
     public class UserServices : IUserServices
     {
         private readonly IUserRepository _userRepository;
-        public UserServices(IUserRepository userRepository)
+        private readonly IJwtServices _jwtServices;
+        public UserServices(IUserRepository userRepository, IJwtServices jwtServices)
         {
+            _jwtServices = jwtServices;
             _userRepository = userRepository;
         }
         public async Task<string> CreateUser(string username, string password, string firstName, string lastName)
         {
-            string res = await _userRepository.CreateUser(username, password, firstName, lastName);
-            return res;
+            User user = new User()
+            {
+                UserName = username,
+                FirstName = firstName,
+                LastName = lastName,
+                HashPassword = new PasswordHasher<string>().HashPassword(username, password)
+            };
+
+            if (await _userRepository.CreateUser(user) != null)
+            {
+                return "Создано";
+            }
+            return "Не возмжно создать";
         }
 
         public Task<string> ForgotPassword(string username)
@@ -25,7 +40,15 @@ namespace CRM.Services.Implementations
 
         public async Task<string> Login(string username, string password)
         {
-            return await _userRepository.Login(username, password);
+
+            // string hashPassword=new PasswordHasher<string>().HashPassword(username, password);
+            User user = await _userRepository.Login(username);
+            PasswordVerificationResult res = new PasswordHasher<string>().VerifyHashedPassword(username, user.HashPassword, password);
+            if (res == PasswordVerificationResult.Success)
+            {
+                return _jwtServices.GenerateToken(user);
+            }
+            return "Пользователя с таким логином нет";
         }
 
         public Task<string> Logout()

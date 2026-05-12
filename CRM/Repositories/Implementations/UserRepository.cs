@@ -1,6 +1,7 @@
 ﻿
 
 using System.Data.SqlClient;
+using CRM.Model;
 
 namespace CRM.Repositories.Implementations
 {
@@ -11,8 +12,9 @@ namespace CRM.Repositories.Implementations
 
         }
 
-        public async Task<string> CreateUser(string username, string password, string firstName, string lastName)
+        public async Task<User> CreateUser(User user)
         {
+            string res="";
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
@@ -22,15 +24,15 @@ namespace CRM.Repositories.Implementations
                                       "BEGIN " +
                                       "INSERT INTO [User] ([User].UserName, [User].[Password],[User].FirstName,[User].LastName) " +
                                       "VALUES (@UserName, @Password,@FirstName,@LastName); " +
-                                      "SELECT 'Создано' AS Result; " +
+                                      "SELECT 'Успех' AS Result; " +
                                       "END " +
                                       "ELSE BEGIN " +
                                       "SELECT 'Такой пользователь уже существует' AS Result; " +
                                       "END ";
-                    cmd.Parameters.AddWithValue("UserName", username);
-                    cmd.Parameters.AddWithValue("Password", password);
-                    cmd.Parameters.AddWithValue("FirstName", firstName);
-                    cmd.Parameters.AddWithValue("LastName", lastName);
+                    cmd.Parameters.AddWithValue("UserName", user.UserName);
+                    cmd.Parameters.AddWithValue("Password", user.HashPassword);
+                    cmd.Parameters.AddWithValue("FirstName", user.FirstName);
+                    cmd.Parameters.AddWithValue("LastName", user.LastName);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
@@ -38,28 +40,37 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-                            string res = reader.GetString(0);
-                            return res;
+                            if (reader.GetString(0)== "Успех")
+                            {
+                                return user;
+                            }                            
+                            //User tmp = new User();                           
+                            //tmp.UserName = reader.GetString(0);
+                            //tmp.Id = reader.GetInt32(1);
+                            //tmp.HashPassword = reader.GetString(2);
+                            //tmp.FirstName = reader.GetString(3);
+                            //tmp.LastName = reader.GetString(4);
+                            //tmp.CreatedAt = reader.GetDateTime(5);
+                            //return tmp;
                         }
                     }
-                    con.Close();
                 }
+                con.Close();
             }
-
-            return "Ошибка подключения";
+            throw new Exception(res);
         }
 
-        public async Task<string> Login(string username, string password)
+        public async Task<User> Login(string username)
         {
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText = "use [CRM] SELECT [User].UserName FROM [User] WHERE [User].UserName=@UserName and [User].Password=@Password ";
+                    cmd.CommandText = "use [CRM] SELECT * FROM [User] WHERE [User].UserName=@UserName ";
 
                     cmd.Parameters.AddWithValue("UserName", username);
-                    cmd.Parameters.AddWithValue("Password", password);
+                    //  cmd.Parameters.AddWithValue("Password", password);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
@@ -67,20 +78,23 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-                            string res = reader.GetString(0);
-
-                            return "Пользователь " + res;
+                            User user = new User();
+                            user.UserName = reader.GetString(0);
+                            user.Id = reader.GetInt32(1);
+                            user.HashPassword = reader.GetString(2);
+                            user.FirstName = reader.GetString(3);
+                            user.LastName = reader.GetString(4);
+                            user.CreatedAt = reader.GetDateTime(5);
+                            return user;
                         }
                     }
-                    else
-                    {
-                        return "Неверные данные для входа";
-                    }
-                    con.Close();
+                   
                 }
+                con.Close();
             }
-
-            return "Ошибка подключения";
+            
+                throw new Exception("Пользователя с таким логинам нет");
+            
         }
     }
 }

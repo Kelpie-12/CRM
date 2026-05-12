@@ -1,9 +1,11 @@
-﻿namespace CRM.Repositories
+﻿using CRM.Model;
+
+namespace CRM.Repositories
 {
     public interface IUserRepository
     {
-        Task<string> Login(string username, string password);
-        Task<string> CreateUser(string username, string password, string firstName, string lastName);
+        Task<User> Login(string username);
+        Task<User> CreateUser(User user);
 
     }
 }
