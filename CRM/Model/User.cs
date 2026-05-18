@@ -9,7 +9,8 @@
         public string Role{ get; set; }
         public string HashPassword{ get; set; }
         public DateTime CreatedAt { get; set; }
-        public int SelectCompzny { get; set; }  
+        public int Status { get; set; }
+    
         
     }
 }

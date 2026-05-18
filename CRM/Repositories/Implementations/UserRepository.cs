@@ -60,6 +60,54 @@ namespace CRM.Repositories.Implementations
             throw new Exception(res);
         }
 
+        public Task<User> DeleteUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<User> GetUser(string username)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<User> GetUser(int userId,int companyId)
+        {
+            using (SqlConnection con = CreateConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "use [CRM] SELECT U.[UserName],U.[Id],U.[Password],U.[FirstName],U.[LastName],U.[CreatedAt],U.[Status],R.[Name] " +
+                        "FROM [dbo].[User] as U,CompanyRole as CR, [Role] as R " +
+                        "where U.[Id] = @UserId and CR.[Role] = R.Id and CR.[CompanyId] = @CompanyId";
+                    cmd.Parameters.AddWithValue("UserId", userId);                 
+                    cmd.Parameters.AddWithValue("CompanyId", companyId);                 
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();              
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            User user = new User();
+                            user.UserName = reader.GetString(0);
+                            user.Id = reader.GetInt32(1);
+                            user.HashPassword = reader.GetString(2);
+                            user.FirstName = reader.GetString(3);
+                            user.LastName = reader.GetString(4);
+                            user.CreatedAt = reader.GetDateTime(5);
+                            user.Status = -1;//Convert.IsDBNull(reader.GetInt32(6))? -1: reader.GetInt32(6);
+                            user.Role = reader.GetString(7);
+                            return user;
+                        }
+                    }
+
+
+                }
+                con.Close();
+            }
+            return null;
+            throw new NotImplementedException();
+        }
+
         public async Task<User> Login(string username)
         {
             using (SqlConnection con = CreateConnection())
@@ -96,6 +144,11 @@ namespace CRM.Repositories.Implementations
             return null;
             //throw new Exception("Пользователя с таким логинам нет");
 
+        }
+
+        public Task<User> UpdateUser(User user)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Data.SqlClient;
 using CRM.Model;
+using CRM.Model.DTO;
 
 namespace CRM.Repositories.Implementations
 {
@@ -10,7 +11,7 @@ namespace CRM.Repositories.Implementations
         {
 
         }
-        public async Task<string> CreateCompany(Company company, User user)
+        public async Task<string> CreateCompany(CompanyDto company, UserDto user)
         {
             string res = "Ошибка в создание компании";
             using (SqlConnection con = CreateConnection())

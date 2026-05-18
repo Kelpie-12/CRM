@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using CRM.Model;
+using CRM.Model.Data;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -48,20 +49,20 @@ namespace CRM.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<IActionResult> LoginCompany(int companyId, int userId)
         {
-            Company company = await _companyServices.GetById(companyId, userId);
+            LoginCompanyModel company = await _companyServices.GetById(companyId, userId);
             //должен передавать все данные о компании, главную страницу назавния и тд.
-
+            //юзера с определенной ролью
 
             return Ok(company);
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("CreateCompany")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> CreateCompany(Company company, User user)
+        public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyModel model)
         {
-            //
-            string res = await _companyServices.CreateCompany(company, user);
+            //доделать таблицу токенов с их статусом, добваить возможность админу идалять пользователей, создавайть новых и наделять правами и ролями
+            string res = await _companyServices.CreateCompany(model.Company, model.User);
 
             return Ok(res);
         }

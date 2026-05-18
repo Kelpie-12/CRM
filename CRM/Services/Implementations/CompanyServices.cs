@@ -2,6 +2,8 @@
 using System.Text.Json;
 using System.Text.Unicode;
 using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.DTO;
 using CRM.Repositories;
 using Microsoft.Extensions.Configuration.UserSecrets;
 
@@ -10,10 +12,12 @@ namespace CRM.Services.Implementations
     public class CompanyServices : ICompanyServices
     {
         private readonly ICompanyRepository _companyRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IJwtServices _jwtServices;
         private JsonSerializerOptions _options;
-        public CompanyServices(ICompanyRepository companyRepository, IJwtServices jwtServices)
+        public CompanyServices(ICompanyRepository companyRepository, IJwtServices jwtServices,IUserRepository userRepository)
         {
+            _userRepository= userRepository;
             _jwtServices = jwtServices;
             _companyRepository = companyRepository;
             _options = new JsonSerializerOptions()
@@ -22,9 +26,9 @@ namespace CRM.Services.Implementations
                 WriteIndented = true
             };
         }
-        public Task<string> CreateCompany(Company company,User user)
+        public Task<string> CreateCompany(CompanyDto company, UserDto user)
         {
-            return _companyRepository.CreateCompany(company, user);            
+            return _companyRepository.CreateCompany(company, user);
         }
 
         public Task<string> DeleteCompany(int id)
@@ -36,7 +40,7 @@ namespace CRM.Services.Implementations
         {
             List<Company> companies = await _companyRepository.GetAllByUser(user);
 
-            JsonCompanyObject json = new JsonCompanyObject()
+            JsonCompaniesListModel json = new JsonCompaniesListModel()
             {
                 UserId = user.Id,
                 Companies = companies,
@@ -47,10 +51,14 @@ namespace CRM.Services.Implementations
             return companyJson;
         }
 
-        public Task<Company> GetById(int id, int userId)
+        public async Task<LoginCompanyModel> GetById(int id, int userId)
         {
-            return _companyRepository.GetById(id,userId);
-            throw new NotImplementedException();
+            //возможны проверки
+            LoginCompanyModel model = new LoginCompanyModel();
+            model.Company = await _companyRepository.GetById(id, userId);
+            model.User = await _userRepository.GetUser(userId,id);
+            return model;
+            //throw new NotImplementedException();
         }
 
         public Task<string> SetRole(User user)

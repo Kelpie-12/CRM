@@ -10,10 +10,12 @@ namespace CRM.Controllers
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class CompanyController : Controller
     {
+
         [HttpGet]
         [Route("GetCompanyById")]
         public IActionResult GetCompanyById(int id)
         {
+
             return View();
         }
 
@@ -21,6 +23,7 @@ namespace CRM.Controllers
         [Route("GetCompanyForUser")]
         public IActionResult GetCompanyForUser(User user)
         {
+
             return View();
         }
         [HttpPost]

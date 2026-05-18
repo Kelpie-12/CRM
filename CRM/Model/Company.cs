@@ -7,10 +7,13 @@ namespace CRM.Model
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
+
         [JsonProperty("Id")]
         public int Id { get; set; }
+
         [JsonProperty("Status")]
         public int Status { get; set; }
+
         [JsonProperty("CreatedAt")]
         public DateTime CreatedAt { get; set; }
 

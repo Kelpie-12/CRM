@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace CRM.Model
+namespace CRM.Model.Data
 {
-    public class JsonCompanyObject
+    public class JsonCompaniesListModel
     {
         [JsonProperty("userId")]
         public int UserId { get; set; }

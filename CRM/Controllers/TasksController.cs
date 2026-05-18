@@ -23,6 +23,7 @@ namespace CRM.Controllers
         public async Task<IActionResult> CreateTask(string data)
         {
 
+
             return Content("Create task");
         }
 
