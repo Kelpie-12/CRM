@@ -24,6 +24,8 @@ namespace CRM.Services.Implementations
                  new Claim("userName",user.UserName),
                  new Claim("firstName",user.FirstName),
                  new Claim("lastName",user.LastName),
+                // new Claim("selectCompany",user.LastName),
+                // new Claim(ClaimTypes.Role,user.Role),
                  new Claim("id",user.Id.ToString())
             };
 

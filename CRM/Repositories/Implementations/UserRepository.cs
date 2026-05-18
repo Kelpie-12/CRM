@@ -14,7 +14,7 @@ namespace CRM.Repositories.Implementations
 
         public async Task<User> CreateUser(User user)
         {
-            string res="";
+            string res = "";
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
@@ -40,10 +40,10 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-                            if (reader.GetString(0)== "Успех")
+                            if (reader.GetString(0) == "Успех")
                             {
                                 return user;
-                            }                            
+                            }
                             //User tmp = new User();                           
                             //tmp.UserName = reader.GetString(0);
                             //tmp.Id = reader.GetInt32(1);
@@ -88,13 +88,14 @@ namespace CRM.Repositories.Implementations
                             return user;
                         }
                     }
-                   
+
+
                 }
                 con.Close();
             }
-            
-                throw new Exception("Пользователя с таким логинам нет");
-            
+            return null;
+            //throw new Exception("Пользователя с таким логинам нет");
+
         }
     }
 }

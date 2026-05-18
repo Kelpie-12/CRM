@@ -38,7 +38,22 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<string> Login(string username, string password)
+        public async Task<User> Login(string username, string password)
+        {
+            User user = await _userRepository.Login(username);
+            if (user != null)
+            {
+                PasswordVerificationResult res = new PasswordHasher<string>().VerifyHashedPassword(username, user.HashPassword, password);
+                if (res == PasswordVerificationResult.Success)
+                {
+                    return user;
+                }
+            }
+            return null;
+            //throw  new Exception("неверный логин или пароль");
+        }
+
+        public async Task<string> LoginInCompany(string username, string password)
         {
 
             // string hashPassword=new PasswordHasher<string>().HashPassword(username, password);

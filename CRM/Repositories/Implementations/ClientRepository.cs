@@ -1,8 +1,12 @@
 ﻿
 namespace CRM.Repositories.Implementations
 {
-    public class ClientRepository : IClientRepository
+    public class ClientRepository :BaseRepository, IClientRepository
     {
+        public ClientRepository(IConfiguration configuration) : base(configuration)
+        {
+
+        }
         public Task<bool> CreateClient(string data)
         {
             throw new NotImplementedException();
