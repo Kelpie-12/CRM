@@ -1,7 +1,10 @@
-﻿namespace CRM.Model
+﻿using Newtonsoft.Json;
+
+namespace CRM.Model
 {
     public class Sales
     {
+        [JsonProperty("")]
         public int IdSalesman { get; set; }
         public int SalesId { get; set; }
         public DateTime SalesDate { get; set; }

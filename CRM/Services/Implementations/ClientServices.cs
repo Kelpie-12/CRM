@@ -1,11 +1,22 @@
 ﻿
+using System.Text.Json;
+using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.DTO;
+using CRM.Repositories;
+
 namespace CRM.Services.Implementations
 {
     public class ClientServices : IClientServices
     {
-        public Task<bool> CreateClient(string data)
+        private readonly IClientRepository _clientRepository;
+        public ClientServices(IClientRepository clientRepository)
         {
-            throw new NotImplementedException();
+            _clientRepository = clientRepository;
+        }
+        public Task<Client> CreateClient(CreateClientModel model)
+        {           
+            return _clientRepository.CreateClient(model.Company, model.Client,model.User);
         }
 
         public Task<bool> CreateSalesForClient(string data)
@@ -13,14 +24,14 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public Task<bool> EditingClient(string data)
+        public Task<Client> EditingClient(CreateClientModel model)
         {
-            throw new NotImplementedException();
+            return _clientRepository.EditingClient(model.Company, model.Client, model.User);
         }
 
-        public Task<string> GetInfoClient(string data)
+        public Task<Client> GetInfoClient(ClientDto client)
         {
-            throw new NotImplementedException();
+            return _clientRepository.GetInfoClient(client);
         }
 
         public Task<string> GetInfoListClients(string data)

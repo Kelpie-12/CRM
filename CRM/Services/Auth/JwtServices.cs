@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 
-namespace CRM.Services.Implementations
+namespace CRM.Services.Auth
 {
     public class JwtServices : IJwtServices
     {
@@ -21,11 +21,11 @@ namespace CRM.Services.Implementations
         {
             List<Claim> claim = new List<Claim>()
             {
-                 new Claim("userName",user.UserName),
+                 new Claim(ClaimTypes.NameIdentifier,user.UserName),
                  new Claim("firstName",user.FirstName),
                  new Claim("lastName",user.LastName),
                 // new Claim("selectCompany",user.LastName),
-                // new Claim(ClaimTypes.Role,user.Role),
+                 new Claim(ClaimTypes.Role,user.Role),
                  new Claim("id",user.Id.ToString())
             };
 

@@ -15,9 +15,9 @@ namespace CRM.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IJwtServices _jwtServices;
         private JsonSerializerOptions _options;
-        public CompanyServices(ICompanyRepository companyRepository, IJwtServices jwtServices,IUserRepository userRepository)
+        public CompanyServices(ICompanyRepository companyRepository, IJwtServices jwtServices, IUserRepository userRepository)
         {
-            _userRepository= userRepository;
+            _userRepository = userRepository;
             _jwtServices = jwtServices;
             _companyRepository = companyRepository;
             _options = new JsonSerializerOptions()
@@ -28,6 +28,15 @@ namespace CRM.Services.Implementations
         }
         public Task<string> CreateCompany(CompanyDto company, UserDto user)
         {
+            //создавать одельную базу данных с базовами таблицами:
+            //1. Задачи +
+            //2. Продажи +
+            //3. Клиенты +
+            //4. Настройки 
+            //5. Склад +
+            //6. Работники +
+
+
             return _companyRepository.CreateCompany(company, user);
         }
 
@@ -56,7 +65,8 @@ namespace CRM.Services.Implementations
             //возможны проверки
             LoginCompanyModel model = new LoginCompanyModel();
             model.Company = await _companyRepository.GetById(id, userId);
-            model.User = await _userRepository.GetUser(userId,id);
+            model.User = await _userRepository.GetUser(userId, id);
+            model.JWT = _jwtServices.GenerateToken(model.User);
             return model;
             //throw new NotImplementedException();
         }

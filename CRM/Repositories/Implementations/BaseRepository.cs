@@ -17,10 +17,12 @@ namespace CRM.Repositories.Implementations
             }
             _connectionSttring = defaultConnectionString;
         }
-        protected SqlConnection CreateConnection()
+        protected SqlConnection CreateConnection(string database = "CRM")
         {
+            string init = "Initial Catalog = ";
             //расширить
-            return new SqlConnection(_connectionSttring);
+            return new SqlConnection(_connectionSttring+init+database);
         }
+    
     }
 }

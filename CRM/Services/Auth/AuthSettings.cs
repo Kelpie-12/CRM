@@ -1,4 +1,4 @@
-﻿namespace CRM.Services.Implementations
+﻿namespace CRM.Services.Auth
 {
     public class AuthSettings
     {

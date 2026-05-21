@@ -1,9 +1,10 @@
 using System.Reflection;
 using System.Text;
 using Autofac;
+using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using CRM.Services;
-using CRM.Services.Implementations;
+using CRM.Services.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -39,7 +40,6 @@ namespace CRM
                                     .AsImplementedInterfaces()
                                     .SingleInstance();
             });
-
             builder.Services.AddDistributedMemoryCache();
             builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
             builder.Services.AddAuth(builder.Configuration);

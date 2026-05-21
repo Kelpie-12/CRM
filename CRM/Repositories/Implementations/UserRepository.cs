@@ -65,6 +65,39 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
+        public async Task<ICollection<Permission>> GetPermissions(string userName)
+        {
+           ICollection<Permission> permissions = new List<Permission>() ;
+            using (SqlConnection con = CreateConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "use [CRM] " +
+                        "select [Permission].[Name] from [Permissions],[Permission],[User] " +
+                        "where [Permissions].UserId=[User].Id and [Permissions].PermissionId=[Permission].Id " +
+                        "and [User].Id=" +
+                        "(select [User].Id from [User] where [User].UserName=@UserName)";
+                    cmd.Parameters.AddWithValue("UserName", userName);                  
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            Permission permission = new Permission();
+                            permission.Name= reader.GetString(0);
+                            permissions.Add(permission);                
+                        
+                        }
+                    }
+                }
+                con.Close();
+            }
+            return permissions;
+        }
+
         public Task<User> GetUser(string username)
         {
             throw new NotImplementedException();

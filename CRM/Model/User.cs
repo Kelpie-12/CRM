@@ -10,7 +10,10 @@
         public string HashPassword{ get; set; }
         public DateTime CreatedAt { get; set; }
         public int Status { get; set; }
+        public ICollection<Permission> permissions { get; set; }
     
         
     }
+
+   
 }

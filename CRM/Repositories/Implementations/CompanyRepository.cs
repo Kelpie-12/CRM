@@ -1,4 +1,5 @@
 ﻿using System.Data.SqlClient;
+using Autofac.Core;
 using CRM.Model;
 using CRM.Model.DTO;
 
@@ -19,9 +20,11 @@ namespace CRM.Repositories.Implementations
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText = "IF NOT EXISTS (SELECT * FROM sys.databases WHERE [name] = @companyName) " +
+                    //уязвимость при создание базы данных
+                    /*
+                     * cmd.CommandText = "IF NOT EXISTS (SELECT * FROM sys.databases WHERE [name] = @companyName) " +
                        "BEGIN " +
-                       "   CREATE DATABASE @companyName;" +
+                       $"   CREATE DATABASE {company.Name};" +
                        "   use CRM" +
                        "   insert into Company ([Name],[Status],CreatedByUserId) " +
                        "   values (@companyName,1,@userId);" +
@@ -33,19 +36,30 @@ namespace CRM.Repositories.Implementations
                        "END; " +
                        "else  " +
                        "   select 'Такая компания уже есть' as Result";
-
-                    // не верный запрос
+                    */             
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.CommandText = "CreateCompany";
                     cmd.Parameters.AddWithValue("userId", user.Id);
                     cmd.Parameters.AddWithValue("companyName", company.Name);
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
 
-                    if (reader.HasRows)
-                    {
-                        while (reader.Read())
-                        {
-                            res = reader.GetString(0);
-                        }
-                    }
+                    SqlParameter p= cmd.CreateParameter();
+                    p.ParameterName = "result";
+                    p.Value =res;
+                    p.DbType= System.Data.DbType.String;
+                    p.Size = 200;
+                    p.Direction = System.Data.ParameterDirection.Output;
+                    cmd.Parameters.Add(p);
+
+                    //cmd.Parameters.AddWithValue("result", res).Direction= System.Data.ParameterDirection.Output;              
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();                    
+                    //if (reader.HasRows)
+                    //{
+                    //    while (reader.Read())
+                    //    {
+                    //        res = reader.GetString(0);
+                    //    }
+                    //}
+                    res =(string) cmd.Parameters["result"].Value;
 
                 }
                 con.Close();

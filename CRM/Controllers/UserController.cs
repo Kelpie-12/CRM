@@ -34,6 +34,7 @@ namespace CRM.Controllers
         public async Task<IActionResult> Login(string username, string password)
         {
             User user = await _userServices.Login(username, password);
+            user.Role = "-1";
             if (user == null)
             {
                 //return Unauthorized();
@@ -50,6 +51,7 @@ namespace CRM.Controllers
         public async Task<IActionResult> LoginCompany(int companyId, int userId)
         {
             LoginCompanyModel company = await _companyServices.GetById(companyId, userId);
+       
             //должен передавать все данные о компании, главную страницу назавния и тд.
             //юзера с определенной ролью
 
@@ -59,7 +61,7 @@ namespace CRM.Controllers
         [HttpPost]
         [Route("CreateCompany")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyModel model)
+        public async Task<IActionResult> CreateCompany(CreateCompanyModel model)
         {
             //доделать таблицу токенов с их статусом, добваить возможность админу идалять пользователей, создавайть новых и наделять правами и ролями
             string res = await _companyServices.CreateCompany(model.Company, model.User);

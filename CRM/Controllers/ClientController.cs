@@ -1,4 +1,6 @@
-﻿using CRM.Services;
+﻿using CRM.Model;
+using CRM.Model.Data;
+using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,27 +20,30 @@ namespace CRM.Controllers
             _configuration = configuration;
         }
 
+
         [HttpPost]
+        [Authorize( Policy = Permissions.Create)]
         [Route("/CreateClient")]
-        public async Task<IActionResult> CreateClient(string name, string data)
+        public async Task<IActionResult> CreateClient([FromBody] CreateClientModel model)
         {
-            if (await _clientServices.CreateClient(data))
-            {
-                return Ok();
-            }
-            return BadRequest("Wrong!");
+            Client res = new Client();
+            res = await _clientServices.CreateClient(model);
+            return Json(res);
 
         }
         [HttpPost]
-        [Route("/EditingClient")]
-        public async Task<IActionResult> EditingClient(string name, string data)
+        [Authorize(Policy = Permissions.Edit)]
+        [Route("/EditClient")]
+        public async Task<IActionResult> EditClient([FromBody] CreateClientModel model)
         {
-            return Ok();
+            Client res = new Client();
+            res = await _clientServices.CreateClient(model);
+            return Json(res);
         }
-   
+
         [HttpPost]
-        [Route("/CreateSalesForClientByManager")]
-        public async Task<IActionResult> CreateSalesForClient(string data)
+        [Route("/CreateSalesForClientByEmployee")]
+        public async Task<IActionResult> CreateSalesForClientByEmployee(string data)
         {
 
             return Ok();

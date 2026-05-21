@@ -1,12 +1,15 @@
-﻿namespace CRM.Repositories
+﻿using CRM.Model;
+using CRM.Model.DTO;
+
+namespace CRM.Repositories
 {
     public interface IClientRepository
     {
-        Task<bool> CreateClient(string data);
-        Task<bool> EditingClient(string data);
-        Task<bool> CreateSalesForClient(string data);
-        Task<string> GetInfoClient(string data);
-        Task<string> GetInfoSalesClient(string data);
-        Task<string> GetInfoListClients(string data);
+        Task<Client> CreateClient(CompanyDto company, ClientDto client,UserDto user);
+        Task<Client> EditingClient(CompanyDto company, ClientDto client, UserDto user);
+        Task<Sales> CreateSalesForClient(string data);
+        Task<Client> GetInfoClient(ClientDto client);
+        Task<ICollection<Sales>> GetInfoSalesClient(string data);
+        Task<ICollection<Client>> GetInfoListClients(string data);
     }
 }
