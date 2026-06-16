@@ -1,4 +1,7 @@
-﻿using CRM.Services;
+﻿using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.DTO;
+using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,25 +21,34 @@ namespace CRM.Controllers
 
         [HttpPost]
         [Route("/CreateSales")]
-        public async Task<IActionResult> CreateSales(string data)
-        {           
-
-            return Ok();
-        }
-
-        [HttpPost]
-        [Route("/EditingSales")]
-        public async Task<IActionResult> EditingSales(string data)
+        [Authorize(Policy = Permissions.Create)]
+        public async Task<IActionResult> CreateSales([FromBody] CreateSaleModel model)
         {
-            return Ok();
+            if (ModelState.IsValid)
+            {
+                return Ok(await _salesServices.CreateSales(model));
+            }
+            return BadRequest("Переданы не верные данные");
         }
+
+       [HttpDelete]
+       [Route("/DeleteSales")]
+       [Authorize(Policy = Permissions.Delete)]
+       public async Task<IActionResult> DeleteSales([FromBody] CompanyDto company,int saleId)
+       {          
+           if (ModelState.IsValid)
+           {
+               return Ok(await _salesServices.DeleteSales(saleId,company));
+           }
+           return BadRequest("Переданы не верные данные");
+       }
 
 
         [HttpPost]
         [Route("/CreateSalesForClient")]
         public async Task<IActionResult> CreateSalesForClient(string data)
         {
-            return Ok(); 
+            return Ok();
         }
 
         [HttpGet]

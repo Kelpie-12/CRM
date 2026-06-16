@@ -1,4 +1,5 @@
 ﻿using CRM.Model;
+using CRM.Model.Data;
 using CRM.Model.DTO;
 
 namespace CRM.Repositories
@@ -7,9 +8,9 @@ namespace CRM.Repositories
     {
         Task<Client> CreateClient(CompanyDto company, ClientDto client,UserDto user);
         Task<Client> EditingClient(CompanyDto company, ClientDto client, UserDto user);
-        Task<Sales> CreateSalesForClient(string data);
-        Task<Client> GetInfoClient(ClientDto client);
+        Task<Client> CreateSalesForClient(string data);
+        Task<Client> GetInfoClient(InfoClientModel model);
         Task<ICollection<Sales>> GetInfoSalesClient(string data);
-        Task<ICollection<Client>> GetInfoListClients(string data);
+        Task<ICollection<Client>> GetInfoListClients(CompanyDto company);
     }
 }

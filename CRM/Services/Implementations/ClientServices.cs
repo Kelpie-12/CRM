@@ -29,14 +29,14 @@ namespace CRM.Services.Implementations
             return _clientRepository.EditingClient(model.Company, model.Client, model.User);
         }
 
-        public Task<Client> GetInfoClient(ClientDto client)
+        public Task<Client> GetInfoClient(InfoClientModel model)
         {
-            return _clientRepository.GetInfoClient(client);
+            return _clientRepository.GetInfoClient(model);
         }
 
-        public Task<string> GetInfoListClients(string data)
+        public async Task<ICollection<Client>> GetInfoListClients(CompanyDto company)
         {
-            throw new NotImplementedException();
+            return await _clientRepository.GetInfoListClients(company);
         }
 
         public Task<string> GetInfoSalesClient(string data)

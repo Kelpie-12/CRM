@@ -9,8 +9,8 @@ namespace CRM.Services
         Task<Client> CreateClient(CreateClientModel model); 
         Task<Client> EditingClient(CreateClientModel model); 
         Task<bool> CreateSalesForClient(string data); 
-        Task<Client> GetInfoClient(ClientDto client); 
+        Task<Client> GetInfoClient(InfoClientModel model); 
         Task<string> GetInfoSalesClient(string data); 
-        Task<string> GetInfoListClients(string data); 
+        Task<ICollection<Client>> GetInfoListClients(CompanyDto company); 
     }
 }

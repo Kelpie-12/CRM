@@ -2,6 +2,7 @@
 
 using System.Data.SqlClient;
 using CRM.Model;
+using CRM.Model.DTO;
 
 namespace CRM.Repositories.Implementations
 {
@@ -12,7 +13,7 @@ namespace CRM.Repositories.Implementations
 
         }
 
-        public async Task<User> CreateUser(User user)
+        public async Task<UserDto> CreateUser(UserDto user)
         {
             string res = "";
             using (SqlConnection con = CreateConnection())

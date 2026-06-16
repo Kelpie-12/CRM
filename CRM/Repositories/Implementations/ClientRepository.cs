@@ -1,5 +1,6 @@
 ﻿using System.Data.SqlClient;
 using CRM.Model;
+using CRM.Model.Data;
 using CRM.Model.DTO;
 using Microsoft.AspNetCore.Mvc.Formatters;
 
@@ -61,12 +62,12 @@ namespace CRM.Repositories.Implementations
             return res;
         }
 
-        public async Task<Sales> CreateSalesForClient(string data)
+        public async Task<Client> CreateSalesForClient(string data)
         {
             Sales sales = new Sales();
+            Client client = new Client();
 
-
-            return await Task.FromResult(sales);
+            return await Task.FromResult(client);
 
             throw new NotImplementedException();
         }
@@ -116,9 +117,10 @@ namespace CRM.Repositories.Implementations
 
         }
 
-        public Task<Client> GetInfoClient(ClientDto client)
+        public Task<Client> GetInfoClient(InfoClientModel model)
         {
             //реализовать метод возварщающий клиента и его покупки/продажи
+
             Client res = new Client()
             {
                 Id = -1,
@@ -129,10 +131,40 @@ namespace CRM.Repositories.Implementations
             return Task.FromResult(res);
         }
 
-        public async Task<ICollection<Client>> GetInfoListClients(string data)
+        public async Task<ICollection<Client>> GetInfoListClients(CompanyDto company)
         {
+            //возвращать лист клиентов
             List<Client> res = new List<Client>();
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "select Clients.Id,Clients.FirstName,Clients.LastName from Clients where Clients.Status=@Status";
 
+                    cmd.Parameters.AddWithValue("Status", 1);
+
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+
+                            res.Add(
+                                new Client()
+                                {
+                                    Id = reader.GetInt32(0),
+                                    FirstName=reader.GetString(1),
+                                    LastName=reader.GetString(2)
+                                }
+                            ); 
+                        }
+                    }
+                }
+                con.Close();
+            }
 
             return await Task.FromResult(res);
 

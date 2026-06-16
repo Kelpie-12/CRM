@@ -14,6 +14,8 @@ namespace CRM.Services.Auth
             var userName = context.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             using var scope = _serviceScopeFactory.CreateScope();
             var _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
+            if (userName == null) { 
+            }
             var permissions = await _userRepository.GetPermissions(userName.Value);
             if (permissions.Any(x=>x.Name==requirement.Permission)) 
             {

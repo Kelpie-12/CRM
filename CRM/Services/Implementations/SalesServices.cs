@@ -1,21 +1,34 @@
 ﻿
+using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.DTO;
+using CRM.Repositories;
+
 namespace CRM.Services.Implementations
 {
     public class SalesServices : ISalesServices
     {
-        public Task<bool> CreateSales(string data)
+        private readonly ISalesRepository _salesRepository;
+        public SalesServices(ISalesRepository salesRepository)
+        {
+            _salesRepository = salesRepository;
+        }
+        public async Task<string> CreateSales(CreateSaleModel model)
+        {
+
+
+            return await _salesRepository.CreateSales(model);
+
+        }
+
+        public Task<Sales> CreateSalesForClient(string data)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> CreateSalesForClient(string data)
+      public async  Task<string> DeleteSales(int saleId, CompanyDto company)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> EdiningSales(string data)
-        {
-            throw new NotImplementedException();
+            return await _salesRepository.DeleteSales(saleId,company);
         }
 
         public Task<string> GetInfoListSales(string data)
@@ -23,7 +36,7 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public Task<string> GetInfoSales(string data)
+        public Task<Sales> GetInfoSales(string data)
         {
             throw new NotImplementedException();
         }

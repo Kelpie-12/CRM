@@ -1,5 +1,6 @@
 ﻿using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.DTO;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +23,7 @@ namespace CRM.Controllers
 
 
         [HttpPost]
-        [Authorize( Policy = Permissions.Create)]
+        [Authorize(Policy = Permissions.Create)]
         [Route("/CreateClient")]
         public async Task<IActionResult> CreateClient([FromBody] CreateClientModel model)
         {
@@ -51,9 +52,13 @@ namespace CRM.Controllers
 
         [HttpGet]
         [Route("/GetInfoClient")]
-        public async Task<string> GetInfoClient(int id)
+        [Authorize(Policy = Permissions.Read)]
+        public async Task<IActionResult> GetInfoClient([FromBody] InfoClientModel model)
         {
-            return "InfoSalesClient item";
+           Client res = new Client();
+            res = await _clientServices.GetInfoClient(model);
+
+            return Json(res);
         }
 
         [HttpGet]
@@ -65,9 +70,12 @@ namespace CRM.Controllers
 
         [HttpGet]
         [Route("/GetInfoListClients")]
-        public async Task<string> GetInfoListClients(int id)
+        [Authorize(Policy = Permissions.Read)]
+        public async Task<IActionResult> GetInfoListClients([FromBody] CompanyDto company)
         {
-            return "InfoClient List item";
+            //проверки подлиности запросов
+
+            return Ok(_clientServices.GetInfoListClients(company));
         }
     }
 }

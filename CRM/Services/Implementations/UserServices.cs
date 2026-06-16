@@ -1,5 +1,6 @@
 ﻿
 using CRM.Model;
+using CRM.Model.DTO;
 using CRM.Repositories;
 using Microsoft.AspNetCore.Identity;
 
@@ -14,15 +15,16 @@ namespace CRM.Services.Implementations
             _jwtServices = jwtServices;
             _userRepository = userRepository;
         }
-        public async Task<string> CreateUser(string username, string password, string firstName, string lastName)
+        public async Task<string> CreateUser(UserDto user)
         {
-            User user = new User()
-            {
-                UserName = username,
-                FirstName = firstName,
-                LastName = lastName,
-                HashPassword = new PasswordHasher<string>().HashPassword(username, password)
-            };
+            user.HashPassword = new PasswordHasher<string>().HashPassword(user.UserName, user.HashPassword);
+            //User user = new User()
+            //{
+            //    UserName = username,
+            //    FirstName = firstName,
+            //    LastName = lastName,
+            //    HashPassword = 
+            //};
 
             if (await _userRepository.CreateUser(user) != null)
             {

@@ -43,6 +43,22 @@ namespace CRM
             builder.Services.AddDistributedMemoryCache();
             builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"));
             builder.Services.AddAuth(builder.Configuration);
+
+            var MyAllowSpecificOrigins = "_myCors";
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(MyAllowSpecificOrigins,
+                     policy =>
+                     {
+                         policy
+                         .WithOrigins("http://localhost:5173") // Your frontend URL
+                         .AllowAnyOrigin()
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                         //.WithMethods("PUT", "DELETE", "GET","POST");
+                     });
+            });
+
             /*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             //    .AddJwtBearer(o => {
             //        o.TokenValidationParameters = new TokenValidationParameters()
@@ -53,7 +69,7 @@ namespace CRM
             //            ValidateIssuerSigningKey = true,
             //            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("securetikeyasdasdasdasdasdasdzxcfgdshdfs"))
             //        };
-               });*/ 
+               });*/
             //builder.WebHost.UseUrls("http://localhos:8080");
 
             var app = builder.Build();
@@ -64,12 +80,27 @@ namespace CRM
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-           // app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
 
-            //app.UseRouting();
-            app.UseAuthorization();
-            app.UseAuthentication();
+            app.UseRouting();
+            app.Use(async (context, next) =>
+            {
+                //context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                context.Response.Headers.AccessControlAllowOrigin = "*";
+                context.Response.Headers.AccessControlAllowMethods = "GET, POST, PUT, DELETE, OPTIONS";
+                context.Response.Headers.AccessControlAllowHeaders = "Content-Type, Authorization";
+            
+                await next();
+            });
+            app.UseCors(MyAllowSpecificOrigins);
             app.UseStaticFiles();
+
+            app.UseAuthorization();
+
+            app.UseAuthentication();
+        
+
+
             app.MapControllers();
 
             app.Run();

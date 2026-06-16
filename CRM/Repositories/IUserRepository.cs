@@ -1,4 +1,5 @@
 ﻿using CRM.Model;
+using CRM.Model.DTO;
 
 namespace CRM.Repositories
 {
@@ -6,7 +7,7 @@ namespace CRM.Repositories
     {
         Task<ICollection<Permission>> GetPermissions(string userName);
         Task<User> Login(string username);
-        Task<User> CreateUser(User user);
+        Task<UserDto> CreateUser(UserDto user);
         Task<User> UpdateUser(User user);
         Task<User> DeleteUser(User user);
         Task<User> GetUser(string username);
