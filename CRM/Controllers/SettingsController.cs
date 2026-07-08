@@ -1,4 +1,4 @@
-﻿
+﻿using CRM.Model;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -7,13 +7,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace CRM.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class SettingsController : Controller
+    [Route("api/v1/[controller]")]
+   [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public class SettingController : Controller
     {
+        private readonly IConfiguration _configuration;
         private readonly ISettingServices _settingServices;
-        public SettingsController(ISettingServices settingServices)
+        public SettingController(IConfiguration configuration,ISettingServices settingServices)
         {
+            _configuration = configuration;
             _settingServices = settingServices;
         }
 
@@ -67,10 +69,12 @@ namespace CRM.Controllers
         }
 
         [HttpGet]
-        [Route("GetInfoSetting")]
-        public async Task<string> GetInfoSetting(int id)
+        [Authorize(Policy = Permissions.Read)]
+        [Route("GetInfo/{id}")]
+        public async Task<IActionResult> GetInfo(int id)
         {
-            return " Get Info Setting item";
+            Console.WriteLine(Request.HttpContext.Request.Headers);
+            return Ok(" Get Info Setting item");
         }
 
 

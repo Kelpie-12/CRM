@@ -2,7 +2,7 @@
 
 namespace CRM.Model.Data
 {
-    public class CreateCompanyModel
+    public class CompanyModel
     {
         public CompanyDto Company { get; set; }
         public UserDto User { get; set; }

@@ -1,4 +1,5 @@
-﻿using CRM.Model;
+﻿using System.Web.Http.Filters;
+using CRM.Model;
 using CRM.Model.Data;
 using CRM.Model.DTO;
 using CRM.Services;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CRM.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class ClientController : Controller
@@ -24,22 +25,42 @@ namespace CRM.Controllers
 
         [HttpPost]
         [Authorize(Policy = Permissions.Create)]
-        [Route("/CreateClient")]
-        public async Task<IActionResult> CreateClient([FromBody] CreateClientModel model)
+        [Route("Create")]
+        public async Task<IActionResult> CreateClient([FromBody] ClientModel model)
         {
             Client res = new Client();
             res = await _clientServices.CreateClient(model);
-            return Json(res);
+            if (res.Id != -1)
+            {
+                return CreatedAtAction(nameof(CreateClient), new { message = "Client created" }, res);
+            }
+            return StatusCode(StatusCodes.Status409Conflict,
+              new { message = "Client with this last name and first name already registered", error = "client_already_exist" });
+
 
         }
-        [HttpPost]
-        [Authorize(Policy = Permissions.Edit)]
-        [Route("/EditClient")]
-        public async Task<IActionResult> EditClient([FromBody] CreateClientModel model)
+        [HttpPut]
+        [Authorize(Policy = Permissions.Update)]
+        [Route("Update")]
+        public async Task<IActionResult> UpdateClient([FromBody] ClientModel model)
         {
             Client res = new Client();
-            res = await _clientServices.CreateClient(model);
-            return Json(res);
+            res = await _clientServices.UpdateClient(model);
+            return StatusCode(StatusCodes.Status200OK, new { message = "Client was update" });
+
+        }
+        [HttpDelete]
+        [Authorize(Policy = Permissions.Delete)]
+        [Route("Delete")]
+        public async Task<IActionResult> DeleteClient([FromBody] ClientModel model)
+        {
+            if (_clientServices.DeleteClient(model).IsCompleted)
+            {
+                return StatusCode(StatusCodes.Status200OK, new { message = "Client was deleted" });
+            }
+            else
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "", error = "deleted_client_error" });
+
         }
 
         [HttpPost]
@@ -51,11 +72,17 @@ namespace CRM.Controllers
         }
 
         [HttpGet]
-        [Route("/GetInfoClient")]
+        [Route("GetAllClientInfo/{companyId}")]
         [Authorize(Policy = Permissions.Read)]
-        public async Task<IActionResult> GetInfoClient([FromBody] InfoClientModel model)
+        public async Task<IActionResult> GetAllClientInfo(int companyId)
         {
-           Client res = new Client();
+            InfoClientModel model = new InfoClientModel()
+            {
+                Client = new ClientDto() { Id = -1 },
+                Company = new CompanyDto() { Id = companyId },
+
+            };
+            Client res = new Client();
             res = await _clientServices.GetInfoClient(model);
 
             return Json(res);
@@ -69,13 +96,13 @@ namespace CRM.Controllers
         }
 
         [HttpGet]
-        [Route("/GetInfoListClients")]
+        [Route("GetAll/{companyId}")]
         [Authorize(Policy = Permissions.Read)]
-        public async Task<IActionResult> GetInfoListClients([FromBody] CompanyDto company)
+        public async Task<IActionResult> GetAll(int companyId)
         {
             //проверки подлиности запросов
 
-            return Ok(_clientServices.GetInfoListClients(company));
+            return Ok(await _clientServices.GetInfoListClients(companyId));
         }
     }
 }

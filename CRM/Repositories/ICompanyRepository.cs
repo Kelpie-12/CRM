@@ -1,4 +1,5 @@
 ﻿using CRM.Model;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
 
 namespace CRM.Repositories
@@ -7,10 +8,11 @@ namespace CRM.Repositories
     {
         Task<Company> GetById(int id,int userId);
         Task<List<Company>> GetAllByUser(User user);
-        Task<string> CreateCompany(CompanyDto company, UserDto user);
+        Task<CreateCompanyResponse> CreateCompany(CompanyDto company, UserDto user);
         Task<string> UpdateCompany(Company company);
         Task<string> DeleteCompany(int id);
         Task<string> SetRole(User user);
+      
 
     }
 }

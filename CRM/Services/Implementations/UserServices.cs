@@ -3,6 +3,7 @@ using CRM.Model;
 using CRM.Model.DTO;
 using CRM.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CRM.Services.Implementations
 {
@@ -15,22 +16,11 @@ namespace CRM.Services.Implementations
             _jwtServices = jwtServices;
             _userRepository = userRepository;
         }
-        public async Task<string> CreateUser(UserDto user)
+        public async Task<UserDto> CreateUser(UserDto user)
         {
-            user.HashPassword = new PasswordHasher<string>().HashPassword(user.UserName, user.HashPassword);
-            //User user = new User()
-            //{
-            //    UserName = username,
-            //    FirstName = firstName,
-            //    LastName = lastName,
-            //    HashPassword = 
-            //};
+            user.Password = new PasswordHasher<string>().HashPassword(user.UserName, user.Password);
 
-            if (await _userRepository.CreateUser(user) != null)
-            {
-                return "Создано";
-            }
-            return "Не возмжно создать";
+            return await _userRepository.CreateUser(user);
         }
 
         public Task<string> ForgotPassword(string username)
@@ -51,7 +41,7 @@ namespace CRM.Services.Implementations
                     return user;
                 }
             }
-            return null;
+            return new User() { Id=-1};
             //throw  new Exception("неверный логин или пароль");
         }
 

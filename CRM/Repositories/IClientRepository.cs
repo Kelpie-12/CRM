@@ -7,10 +7,11 @@ namespace CRM.Repositories
     public interface IClientRepository
     {
         Task<Client> CreateClient(CompanyDto company, ClientDto client,UserDto user);
-        Task<Client> EditingClient(CompanyDto company, ClientDto client, UserDto user);
+        Task<Client> UpdateClient(CompanyDto company, ClientDto client, UserDto user);
+        Task<Task> DeleteClient(CompanyDto company, ClientDto client, UserDto user);
         Task<Client> CreateSalesForClient(string data);
         Task<Client> GetInfoClient(InfoClientModel model);
         Task<ICollection<Sales>> GetInfoSalesClient(string data);
-        Task<ICollection<Client>> GetInfoListClients(CompanyDto company);
+        Task<ICollection<Client>> GetInfoListClients(int companyId);
     }
 }

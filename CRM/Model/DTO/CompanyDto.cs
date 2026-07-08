@@ -3,7 +3,7 @@
     public class CompanyDto
     {        
         public string Name { get; set; }
-        public int Id { get; set; } 
+        public int ?Id { get; set; } 
 
     }
 }

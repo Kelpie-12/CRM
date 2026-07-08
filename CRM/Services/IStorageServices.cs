@@ -1,11 +1,18 @@
-﻿namespace CRM.Services
+﻿using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.Data.Response;
+using CRM.Model.DTO;
+
+namespace CRM.Services
 {
     public interface IStorageServices
     {
-        Task<bool> CreateItem(string data);
+        Task<CreateItemResponse> CreateItem(ItemModel item);
         Task<bool> WriteOffItem(string data);
         Task<bool> ArrivalItem(string data);
-        Task<bool> EditingItem(string data);
+        Task<Item> UpdateItem(ItemModel item);
+        Task<bool> DeleteItem(ItemModel item);
+        Task<ICollection<Item>> GetAll(CompanyDto company);
         Task<string> GetInfoItem(string data);
         Task<string> GetInfoWriteOffItem(string data);
         Task<string> GetInfoArrivalItem(string data);

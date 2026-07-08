@@ -22,8 +22,8 @@ namespace CRM.Services.Auth
                         policy => policy.Requirements.Add(new PermissionRequirements(Permissions.Read)));
                     x.AddPolicy(Permissions.Delete,
                         policy => policy.Requirements.Add(new PermissionRequirements(Permissions.Delete)));
-                    x.AddPolicy(Permissions.Edit,
-                      policy => policy.Requirements.Add(new PermissionRequirements(Permissions.Edit)));
+                    x.AddPolicy(Permissions.Update,
+                      policy => policy.Requirements.Add(new PermissionRequirements(Permissions.Update)));
                     x.AddPolicy(Permissions.Create,
                    policy => policy.Requirements.Add(new PermissionRequirements(Permissions.Create)));
                 }

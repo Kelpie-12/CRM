@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using CRM.Repositories;
+using CRM.Repositories.Implementations;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CRM.Services.Auth
@@ -12,17 +13,26 @@ namespace CRM.Services.Auth
             PermissionRequirements requirement)
         {
             var userName = context.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
+            var userId = context.User.Claims.FirstOrDefault(x => x.Type == "id");
+            var companyName = context.User.Claims.FirstOrDefault(x => x.Type == "selectedCompany");
             using var scope = _serviceScopeFactory.CreateScope();
-            var _userRepository = scope.ServiceProvider.GetService<IUserRepository>();
-            if (userName == null) { 
-            }
-            var permissions = await _userRepository.GetPermissions(userName.Value);
-            if (permissions.Any(x=>x.Name==requirement.Permission)) 
+            var _permissionRepository = scope.ServiceProvider.GetService<IPermissionsRepository>();
+            if (userName == null)
             {
-                context.Succeed(requirement);
-            }
 
-            return  Task.CompletedTask;
+            }
+            if (companyName != null)
+            {
+                var permissions = await _permissionRepository.GetPermissions(userId.Value, companyName.Value);
+
+                if (permissions.Any(x => x.Name == requirement.Permission))
+                {
+                    context.Succeed(requirement);
+                }
+            }
+            // var permissions = await _userRepository.GetPermissions(userName.Value);
+
+            return Task.CompletedTask;
 
         }
     }

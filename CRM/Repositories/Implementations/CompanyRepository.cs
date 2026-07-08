@@ -1,7 +1,10 @@
 ﻿using System.Data.SqlClient;
 using Autofac.Core;
 using CRM.Model;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.SqlServer.Server;
 
 namespace CRM.Repositories.Implementations
 {
@@ -12,9 +15,15 @@ namespace CRM.Repositories.Implementations
         {
 
         }
-        public async Task<string> CreateCompany(CompanyDto company, UserDto user)
+        public async Task<CreateCompanyResponse> CreateCompany(CompanyDto company, UserDto user)
         {
-            string res = "Ошибка в создание компании";
+            CreateCompanyResponse response = new CreateCompanyResponse()
+            {
+                Message = "Fail!",
+                Error = "error_create_company",
+                Company = new CompanyDto() { Name = company.Name }
+            };    
+            CompanyDto tmp = new CompanyDto();
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
@@ -36,22 +45,22 @@ namespace CRM.Repositories.Implementations
                        "END; " +
                        "else  " +
                        "   select 'Такая компания уже есть' as Result";
-                    */             
+                    */
                     cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.CommandText = "CreateCompany";
                     cmd.Parameters.AddWithValue("userId", user.Id);
                     cmd.Parameters.AddWithValue("companyName", company.Name);
 
-                    SqlParameter p= cmd.CreateParameter();
+                    SqlParameter p = cmd.CreateParameter();
                     p.ParameterName = "result";
-                    p.Value =res;
-                    p.DbType= System.Data.DbType.String;
+                    p.Value = response.Message;
+                    p.DbType = System.Data.DbType.String;
                     p.Size = 200;
                     p.Direction = System.Data.ParameterDirection.Output;
                     cmd.Parameters.Add(p);
 
                     //cmd.Parameters.AddWithValue("result", res).Direction= System.Data.ParameterDirection.Output;              
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();                    
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //if (reader.HasRows)
                     //{
                     //    while (reader.Read())
@@ -59,8 +68,61 @@ namespace CRM.Repositories.Implementations
                     //        res = reader.GetString(0);
                     //    }
                     //}
-                    res =(string) cmd.Parameters["result"].Value;
+                    response.Message = (string)cmd.Parameters["result"].Value;
+                    if (response.Message != "Fail! Company already exist")
+                    {
+                        response.Company.Id = Convert.ToInt32(response.Message);
+                        if (await CreateTrigger(company) == "Fail!")
+                        {
+                            response.Message = "Create trigger fail!";
+                            response.Error = "error_create_trigger_fail";
+                            response.Company.Id = -1;
+                        }
+                        response.Message = "Created new company!";
+                        response.Error = "none";
+                    }
+                    else
+                    {
+                        tmp.Id = -1;                       
+                    }
 
+                }
+                con.Close();
+            }
+
+            return response;
+        }
+        private async Task<string> CreateTrigger(CompanyDto company)
+        {
+            string res = "Fail!";
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    try
+                    {
+                        cmd.CommandType = System.Data.CommandType.Text;
+                        cmd.CommandText =
+                            "CREATE TRIGGER trg_AfterInsert_Sales " +
+                            "ON Sales " +
+                            "AFTER INSERT AS BEGIN " +
+                            "SET NOCOUNT ON; " +
+                            "declare @count as int " +
+                            "set @count=(select [Count] from inserted) " +
+                            "update Storage " +
+                            "set Storage.[Count]=Storage.[Count]-@count " +
+                            "where Storage.Id =(select ItemId from inserted)  " +
+                            "END;";
+
+                        await cmd.ExecuteNonQueryAsync();
+                        res = "Success!";
+                    }
+                    catch (Exception e)
+                    {
+                        //Console.WriteLine(e.Message);
+                        return $"Error - {e.Message}";
+                    }
                 }
                 con.Close();
             }

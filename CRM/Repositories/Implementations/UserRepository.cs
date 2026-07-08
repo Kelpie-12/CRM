@@ -25,13 +25,14 @@ namespace CRM.Repositories.Implementations
                                       "BEGIN " +
                                       "INSERT INTO [User] ([User].UserName, [User].[Password],[User].FirstName,[User].LastName) " +
                                       "VALUES (@UserName, @Password,@FirstName,@LastName); " +
-                                      "SELECT 'Успех' AS Result; " +
+                                      "SELECT [User].Id FROM [User] WHERE [User].UserName=@UserName " +
+                                      //"SELECT 'true' AS Result; " +
                                       "END " +
                                       "ELSE BEGIN " +
-                                      "SELECT 'Такой пользователь уже существует' AS Result; " +
+                                      "SELECT -1 AS Result; " +
                                       "END ";
                     cmd.Parameters.AddWithValue("UserName", user.UserName);
-                    cmd.Parameters.AddWithValue("Password", user.HashPassword);
+                    cmd.Parameters.AddWithValue("Password", user.Password);
                     cmd.Parameters.AddWithValue("FirstName", user.FirstName);
                     cmd.Parameters.AddWithValue("LastName", user.LastName);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
@@ -41,10 +42,12 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-                            if (reader.GetString(0) == "Успех")
+                            if (reader.GetInt32(0) == -1)
                             {
-                                return user;
+                                return new UserDto() { Id = -1 };
                             }
+                            user.Id = reader.GetInt32(0);                          
+                            return user;
                             //User tmp = new User();                           
                             //tmp.UserName = reader.GetString(0);
                             //tmp.Id = reader.GetInt32(1);
@@ -66,9 +69,9 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<ICollection<Permission>> GetPermissions(string userName)
+       /* public async Task<ICollection<Permission>> GetPermissions(string userName)
         {
-           ICollection<Permission> permissions = new List<Permission>() ;
+            ICollection<Permission> permissions = new List<Permission>();
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
@@ -79,7 +82,7 @@ namespace CRM.Repositories.Implementations
                         "where [Permissions].UserId=[User].Id and [Permissions].PermissionId=[Permission].Id " +
                         "and [User].Id=" +
                         "(select [User].Id from [User] where [User].UserName=@UserName)";
-                    cmd.Parameters.AddWithValue("UserName", userName);                  
+                    cmd.Parameters.AddWithValue("UserName", userName);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
@@ -88,9 +91,9 @@ namespace CRM.Repositories.Implementations
                         while (reader.Read())
                         {
                             Permission permission = new Permission();
-                            permission.Name= reader.GetString(0);
-                            permissions.Add(permission);                
-                        
+                            permission.Name = reader.GetString(0);
+                            permissions.Add(permission);
+
                         }
                     }
                 }
@@ -98,13 +101,13 @@ namespace CRM.Repositories.Implementations
             }
             return permissions;
         }
-
+       */
         public Task<User> GetUser(string username)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<User> GetUser(int userId,int companyId)
+        public async Task<User> GetUser(int userId, int companyId)
         {
             using (SqlConnection con = CreateConnection())
             {
@@ -114,9 +117,9 @@ namespace CRM.Repositories.Implementations
                     cmd.CommandText = "use [CRM] SELECT U.[UserName],U.[Id],U.[Password],U.[FirstName],U.[LastName],U.[CreatedAt],U.[Status],R.[Name] " +
                         "FROM [dbo].[User] as U,CompanyRole as CR, [Role] as R " +
                         "where U.[Id] = @UserId and CR.[Role] = R.Id and CR.[CompanyId] = @CompanyId";
-                    cmd.Parameters.AddWithValue("UserId", userId);                 
-                    cmd.Parameters.AddWithValue("CompanyId", companyId);                 
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();              
+                    cmd.Parameters.AddWithValue("UserId", userId);
+                    cmd.Parameters.AddWithValue("CompanyId", companyId);
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     if (reader.HasRows)
                     {
                         while (reader.Read())

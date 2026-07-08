@@ -6,11 +6,12 @@ namespace CRM.Services
 {
     public interface IClientServices
     {
-        Task<Client> CreateClient(CreateClientModel model); 
-        Task<Client> EditingClient(CreateClientModel model); 
+        Task<Client> CreateClient(ClientModel model); 
+        Task<Client> UpdateClient(ClientModel model); 
+        Task<Task> DeleteClient(ClientModel model);
         Task<bool> CreateSalesForClient(string data); 
         Task<Client> GetInfoClient(InfoClientModel model); 
         Task<string> GetInfoSalesClient(string data); 
-        Task<ICollection<Client>> GetInfoListClients(CompanyDto company); 
+        Task<ICollection<Client>> GetInfoListClients(int companyId); 
     }
 }

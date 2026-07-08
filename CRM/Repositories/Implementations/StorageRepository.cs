@@ -1,21 +1,170 @@
 ﻿
+using System.Data.SqlClient;
+using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.Data.Response;
+using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
+
 namespace CRM.Repositories.Implementations
 {
-    public class StorageRepository : IStorageRepository
+    public class StorageRepository : BaseRepository, IStorageRepository
     {
+        public StorageRepository(IConfiguration configuration) : base(configuration)
+        {
+        }
+
         public Task<bool> ArrivalItem(string data)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> CreateItem(string data)
+        public async Task<CreateItemResponse> CreateItem(ItemModel item)
         {
-            throw new NotImplementedException();
+            CreateItemResponse response = new CreateItemResponse()
+            {
+                Message = "Item was created!",
+                Error = "none",
+                Item = new Item()
+            };
+            using (SqlConnection con = CreateConnection(item.Company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "IF NOT EXISTS (SELECT 1 FROM [Storage] WHERE [Storage].Article=@Article) " +
+                                      "BEGIN " +
+                                      "declare @e as int " +
+                                      "set @e =(select [Employee].[Id] from [Employee] where [Employee].[UserId]=@UserId)" +
+                                      "INSERT INTO [Storage] ([Storage].Name,[Storage].Article,[Storage].[Status],[Storage].EmployeeCreateId, " +
+                                      "[Storage].Count,[Storage].Price,[Storage].PurchasePrice) " +
+                                      "VALUES (@Name,@Article,@Status,@e,@Count,@Price,@PurchasePrice); " +
+                                      "select [Storage].[Name],[Storage].[Id],[Storage].Article," +
+                                      "[Storage].[Count],[Storage].Price,[Storage].PurchasePrice,[Storage].[Status] " +
+                                      "from [Storage] where [Storage].Article=@Article " +
+                                      "END " +
+                                      "ELSE BEGIN " +
+                                      "SELECT 'Item already exist' AS Result; " +
+                                      "END ";
+                    cmd.Parameters.AddWithValue("Article", item.Item.Article);
+                    cmd.Parameters.AddWithValue("Name", item.Item.Name);
+                    cmd.Parameters.AddWithValue("UserId", item.User.Id);
+                    cmd.Parameters.AddWithValue("Count", item.Item.Count);
+                    cmd.Parameters.AddWithValue("Price", item.Item.Price);
+                    cmd.Parameters.AddWithValue("PurchasePrice", item.Item.PurchasePrice ?? 1);
+
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
+
+
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    try
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                if (reader.GetString(0) != "Item already exist")
+                                {
+                                    response.Item.Name = reader.GetString(0);
+                                    response.Item.Id = reader.GetInt32(1);
+                                    response.Item.Article = reader.GetInt32(2);
+                                    response.Item.Count = reader.GetInt32(3);
+                                    response.Item.Price = reader.GetDecimal(4);
+                                    response.Item.PurchasePrice = reader.GetDecimal(5);
+                                    response.Item.Status = reader.GetInt32(6);
+                                    return response;
+                                }
+                                response.Item.Id = -1;
+                                response.Message = "Item already exist";
+                                response.Error = "error_item_already_exist";
+
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        response.Error=e.Message;
+                        response.Message="Created item was fail! Check data!";
+                        response.Item.Id = -1;
+                        //throw;
+                    }
+                    //cmd.ExecuteNonQuery(); 
+                   
+                }
+                con.Close();
+            }
+
+
+            return response;
         }
 
-        public Task<bool> EditingItem(string data)
+        public async Task<Task> DeleteItem(ItemModel item)
         {
-            throw new NotImplementedException();
+            using (SqlConnection con = CreateConnection(item.Company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "declare @eId as int " +
+                                      "set @eId=(select [Employee].[Id] from [Employee] where [Employee].[UserId]=@UserId)" +
+                                      "update [Storage] " +
+                                      "set [Status]=@Status,[EmloyeeUpdateId]=@eId " +
+                                      "where [Storage].Id=@StorageId ";
+                    cmd.Parameters.AddWithValue("StorageId", item.Item.Id);
+                    cmd.Parameters.AddWithValue("UserId", item.User.Id);
+                    cmd.Parameters.AddWithValue("Status", Status.Deleted);
+
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+
+                }
+                con.Close();
+            }
+            return Task.CompletedTask;
+            //  return Task.FromResult(false);
+        }
+
+        public async Task<ICollection<Item>> GetAll(CompanyDto company)
+        {
+
+            List<Item> res = new List<Item>();
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "select  [Storage].Article,[Storage].Name," +
+                                      "[Storage].Count,[Storage].Price,[Storage].[Status],[Storage].Id,[Storage].PurchasePrice " +
+                                      "from [Storage]" +
+                                      "where [Storage].Status=@Status";
+
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            Item item = new Item();
+                            item.Article = reader.GetInt32(0);
+                            item.Name = reader.GetString(1);
+                            item.Count = reader.GetInt32(2);
+                            item.Price = reader.GetDecimal(3);
+                            //item.Price = reader.GetInt32(3);
+                            item.Status = reader.GetInt32(4);
+                            item.Id = reader.GetInt32(5);
+                            item.PurchasePrice = -1;// reader.GetInt32(5);
+                            res.Add(item);
+                        }
+                    }
+                }
+                con.Close();
+            }
+
+
+            return await Task.FromResult(res);
         }
 
         public Task<string> GetInfoArrivalItem(string data)
@@ -36,6 +185,64 @@ namespace CRM.Repositories.Implementations
         public Task<string> GetInfoWriteOffItem(string data)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<Item> UpdateItem(ItemModel item)
+        {
+            Item res = new Item();
+            using (SqlConnection con = CreateConnection(item.Company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "declare @eId as int " +
+                                      "set @eId=(select [Employee].[Id] from [Employee] where [Employee].[UserId]=@UserId)" +
+                                      "update [Storage] " +
+                                      "set [Name]=@Name,Article=@Article,[Count]=@Count,Price=@Price," +
+                                      "PurchasePrice=@PurchasePrice,EmloyeeUpdateId=@eId " +
+                                      "where Id=@Id " +
+                                      "select [Storage].[Name],[Storage].[Id],[Storage].Article," +
+                                      "[Storage].[Count],[Storage].Price,[Storage].PurchasePrice,[Storage].[Status] " +
+                                      "from [Storage] where [Storage].Article=@Article ";
+                    cmd.Parameters.AddWithValue("Article", item.Item.Article);
+                    cmd.Parameters.AddWithValue("Name", item.Item.Name);
+                    cmd.Parameters.AddWithValue("UserId", item.User.Id);
+                    cmd.Parameters.AddWithValue("Id", item.Item.Id);
+                    cmd.Parameters.AddWithValue("Count", item.Item.Count);
+                    cmd.Parameters.AddWithValue("Price", item.Item.Price);
+                    cmd.Parameters.AddWithValue("PurchasePrice", item.Item.PurchasePrice ?? 1);
+
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
+
+
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            if (reader.GetString(0) != "Item already exist")
+                            {
+                                res.Name = reader.GetString(0);
+                                res.Id = reader.GetInt32(1);
+                                res.Article = reader.GetInt32(2);
+                                res.Count = reader.GetInt32(3);
+                                res.Price = reader.GetDecimal(4);
+                                res.PurchasePrice = -1;//reader.GetDecimal(5);
+                                res.Status = reader.GetInt32(6);
+                                return res;
+                            }
+                            res.Id = -1;
+
+                        }
+                    }
+                }
+                con.Close();
+            }
+
+
+            return res;
         }
 
         public Task<bool> WriteOffItem(string data)

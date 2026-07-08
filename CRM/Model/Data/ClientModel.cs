@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace CRM.Model.Data
 {
-    public class CreateClientModel
+    public class ClientModel
     {
         [JsonProperty("company")]
         public CompanyDto Company { get; set; }

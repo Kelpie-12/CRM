@@ -4,7 +4,7 @@
     {
         public Company Company { get; set; }
         public User User { get; set; }
-        public string JWT { get; set; }
+        public string Token { get; set; }
 
     }
 }

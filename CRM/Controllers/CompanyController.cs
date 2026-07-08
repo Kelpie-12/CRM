@@ -1,4 +1,9 @@
 ﻿using CRM.Model;
+using CRM.Model.Data;
+using CRM.Model.Data.Response;
+using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
+using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,42 +11,45 @@ using Microsoft.AspNetCore.Mvc;
 namespace CRM.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class CompanyController : Controller
     {
+        private readonly ICompanyServices _companyServices;
+        public CompanyController(ICompanyServices companyServices)
+        {
+            _companyServices = companyServices;
+        }    
 
         [HttpGet]
-        [Route("GetCompanyById")]
-        public IActionResult GetCompanyById(int id)
+        [Route("Login/{companyId}/{userId}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> LoginCompany(int companyId, int userId)
         {
+            LoginCompanyModel company = await _companyServices.GetLoginCompany(companyId, userId);
 
-            return View();
-        }
+            //должен передавать все данные о компании, главную страницу назавния и тд.
+            //юзера с определенной ролью
 
-        [HttpGet]
-        [Route("GetCompanyForUser")]
-        public IActionResult GetCompanyForUser(User user)
-        {
-
-            return View();
+            return Ok(company);
         }
         [HttpPost]
-        [Route("CreateCompany")]
-        public IActionResult CreateCompany(Company company)
+        [Route("Create")]
+        //[Authorize(Roles =Roles.Admin)]
+        public async Task<IActionResult> CreateCompany([FromBody]CompanyModel company)
         {
+            CreateCompanyResponse response = await _companyServices.CreateCompany(company.Company,company.User);
+            if (response.Company.Id== -1)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest,
+                    new { message = response.Message, error = response.Error, company=response.Company});
+                
+            }
+            return StatusCode(StatusCodes.Status201Created,response);
+            
 
-
-            return View();
+            //return StatusCode(StatusCodes.Status201Created);
         }
-        [HttpPost]
-        [Route("SetRole")]
-        public IActionResult SetRole(User user)
-        {
-            return View();
-        }
-
-
 
 
     }

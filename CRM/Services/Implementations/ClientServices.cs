@@ -14,9 +14,9 @@ namespace CRM.Services.Implementations
         {
             _clientRepository = clientRepository;
         }
-        public Task<Client> CreateClient(CreateClientModel model)
-        {           
-            return _clientRepository.CreateClient(model.Company, model.Client,model.User);
+        public Task<Client> CreateClient(ClientModel model)
+        {
+            return _clientRepository.CreateClient(model.Company, model.Client, model.User);
         }
 
         public Task<bool> CreateSalesForClient(string data)
@@ -24,24 +24,41 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public Task<Client> EditingClient(CreateClientModel model)
+        public Task<Client> UpdateClient(ClientModel model)
         {
-            return _clientRepository.EditingClient(model.Company, model.Client, model.User);
+            return _clientRepository.UpdateClient(model.Company, model.Client, model.User);
         }
 
-        public Task<Client> GetInfoClient(InfoClientModel model)
+        public async Task<Client> GetInfoClient(InfoClientModel model)
         {
-            return _clientRepository.GetInfoClient(model);
+
+            Client res = await _clientRepository.GetInfoClient(model);
+
+            return res;
         }
 
-        public async Task<ICollection<Client>> GetInfoListClients(CompanyDto company)
+        public async Task<ICollection<Client>> GetInfoListClients(int companyId)
         {
-            return await _clientRepository.GetInfoListClients(company);
+            return await _clientRepository.GetInfoListClients(companyId);
         }
 
         public Task<string> GetInfoSalesClient(string data)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<Task> DeleteClient(ClientModel model)
+        {
+            if (model == null)
+            {
+                //дописать различное поведение
+            }
+            bool res =  _clientRepository.DeleteClient(model.Company, model.Client, model.User).IsCompleted;
+            if (res)
+            {
+                return Task.CompletedTask;
+            }else
+                throw new ArgumentNullException("");
         }
     }
 }

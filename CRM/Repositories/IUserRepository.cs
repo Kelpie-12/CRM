@@ -5,7 +5,7 @@ namespace CRM.Repositories
 {
     public interface IUserRepository
     {
-        Task<ICollection<Permission>> GetPermissions(string userName);
+        //Task<ICollection<Permission>> GetPermissions(string userName);
         Task<User> Login(string username);
         Task<UserDto> CreateUser(UserDto user);
         Task<User> UpdateUser(User user);

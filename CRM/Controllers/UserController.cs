@@ -1,19 +1,15 @@
-﻿using System.Text.Json;
-
-using CRM.Model;
+﻿using CRM.Model;
 using CRM.Model.Data;
 using CRM.Model.DTO;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace CRM.Controllers
 {
-    [EnableCors("_myAllowSpecificOrigins")]
-    [Route("api/[controller]")]
+    // [EnableCors("_myAllowSpecificOrigins")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class UserController : Controller
     {
@@ -25,69 +21,110 @@ namespace CRM.Controllers
             _companyServices = companyServices;
         }
 
+        /*
+         [HttpGet]
+         [Route("Tasks")]
+         public async Task<IActionResult> GetTasks()
+         {
+             // Tasks tasks = new Tasks() { Id = 1, Title = "test get api", IsDone = false };
+             List<Tasks> tasks = new List<Tasks>()
+             {
+                     new Tasks(){ Id = "1", Title = "test get api", IsDone = false },
+                     new Tasks(){ Id = "2", Title = "test get api", IsDone = true }
+             };
+             //string res = System.Text.Json.JsonSerializer.Serialize(tasks,new JsonSerializerOptions()
+             //{
+             //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+             //    WriteIndented = true
+             //});
+
+             return Ok(tasks);
+             // Content(res);
+         }
+
+         [HttpGet]
+         [Route("Task/{id}")]
+         public async Task<IActionResult> GetTask(int id)
+         {
+             if (id == 1) { 
+
+             return Ok(new Tasks() { Id = "1", Title = "task1", IsDone = false });
+             }
+
+
+
+             return Ok(new Tasks() { Id = "1", Title = "eximple", IsDone = false });
+             // Content(res);
+         }
+
+         [HttpPost]
+         [Route("AddTasks")]
+         public async Task<IActionResult> AddTasks([FromForm] Tasks tasks)
+         {
+             // Tasks tasks = new Tasks() { Id = 1, Title = "test get api", IsDone = false };
+             Tasks task = new Tasks();
+             //Console.WriteLine(tasks.Title + "Title");
+             //Console.WriteLine(tasks.Id + "id");
+             task.Id = "3";
+             task.Title = "задача побывала на сервре";
+             //79-20-21
+             List<Tasks> tasks1 = new List<Tasks>()
+             {
+                 task,
+                 new Tasks(){Id="43",Title="ttt",IsDone=true}
+                   //new Tasks(){ Id = "1", Title = "test get api", IsDone = false },
+                   //new Tasks(){ Id = "2", Title = "test get api", IsDone = true }
+             };
+             //string res = System.Text.Json.JsonSerializer.Serialize(tasks, new JsonSerializerOptions()
+             //{
+             //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+             //    WriteIndented = true
+             //});
+
+             return Ok(task);
+             // Content(res);
+         }        
+
         [HttpGet]
-        [Route("Tasks")]
-        public async Task<IActionResult> GetTasks()
+        [Route("Login_test/{username}/{pwd}")]
+        public async Task<IActionResult> Login_test(string username,string pwd)
         {
-            // Tasks tasks = new Tasks() { Id = 1, Title = "test get api", IsDone = false };
-            List<Tasks> tasks = new List<Tasks>()
+            if (username=="123" && pwd=="123")
             {
-                    new Tasks(){ Id = "1", Title = "test get api", IsDone = false },
-                    new Tasks(){ Id = "2", Title = "test get api", IsDone = true }
-            };
-            //string res = System.Text.Json.JsonSerializer.Serialize(tasks,new JsonSerializerOptions()
-            //{
-            //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-            //    WriteIndented = true
-            //});
+                Console.WriteLine($"user-{username}:::pwd-{pwd}");
+                return StatusCode(StatusCodes.Status200OK, new { message = "User login" });
+            }
 
-            return Ok(tasks);
-            // Content(res);
-        }
-        [HttpPost]
-        [Route("AddTasks")]
-        public async Task<IActionResult> AddTasks([FromForm] Tasks tasks)
-        {
-            // Tasks tasks = new Tasks() { Id = 1, Title = "test get api", IsDone = false };
-            Tasks task=new Tasks();
-            Console.WriteLine(tasks.Title +"Title");
-            Console.WriteLine(tasks.Id+"id");
-            task.Id ="3";
-            task.Title = "задача побывала на сервре";
-
-            List<Tasks> tasks1 = new List<Tasks>()
-            {
-                task,
-                new Tasks(){Id="43",Title="ttt",IsDone=true}
-                  //new Tasks(){ Id = "1", Title = "test get api", IsDone = false },
-                  //new Tasks(){ Id = "2", Title = "test get api", IsDone = true }
-            };
-            //string res = System.Text.Json.JsonSerializer.Serialize(tasks, new JsonSerializerOptions()
-            //{
-            //    Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
-            //    WriteIndented = true
-            //});
-
-            return Ok(tasks1);
-            // Content(res);
-        }
-
-
+            return StatusCode(StatusCodes.Status409Conflict,
+                new { message = "User with this email already registered", error = "email_already_exist" });
+        }*/
         [HttpPost]
         [Route("CreateUser")]//регистрация
-        public async Task<IActionResult> CreateUser([FromForm] UserDto user/*string username, string password, string firstName, string lastName*/)
+        public async Task<IActionResult> CreateUser([FromBody] UserDto user/*string username, string password, string firstName, string lastName*/)
         {
-            string res = await _userServices.CreateUser(user);
-            return Content(res);
+            //Console.WriteLine(user);
+            //Console.WriteLine(user.UserName);
+            //Console.WriteLine();
+            UserDto res = await _userServices.CreateUser(user);
+            if (res.Id != -1)
+            {
+                return CreatedAtAction(nameof(CreateUser), new { message = "User created" }, res);
+            }
+            return StatusCode(StatusCodes.Status409Conflict,
+              new { message = "User with this email already registered", error = "email_already_exist" });
+
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("Login")]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login([FromBody] LoginDto login/*string username, string password*/)
         {
-            User user = await _userServices.Login(username, password);
+            //Console.WriteLine();
+            //Console.WriteLine($"{login.Username}  {login.Password}");
+            //Console.WriteLine();
+            User user = await _userServices.Login(login.Username, login.Password);
             user.Role = "-1";
-            if (user == null)
+            if (user.Id==-1)
             {
                 //return Unauthorized();
                 return BadRequest(new { message = "Неверные данные" });
@@ -97,39 +134,33 @@ namespace CRM.Controllers
             return Content(companies);
         }
 
-        [HttpGet]
-        [Route("LoginCompany")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> LoginCompany(int companyId, int userId)
-        {
-            LoginCompanyModel company = await _companyServices.GetById(companyId, userId);
+      
+        //перенести в контроллер компаний
+        //[HttpGet]
+        //[Route("LoginCompany/{companyId}/{userId}")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //public async Task<IActionResult> LoginCompany(int companyId,int userId)
+        //{
+        //    LoginCompanyModel company = await _companyServices.GetLoginCompany(companyId, userId);
 
-            //должен передавать все данные о компании, главную страницу назавния и тд.
-            //юзера с определенной ролью
+        //    //должен передавать все данные о компании, главную страницу назавния и тд.
+        //    //юзера с определенной ролью
 
-            return Ok(company);
-        }
+        //    return Ok(company);
+        //}
 
-        [HttpPost]
-        [Route("CreateCompany")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> CreateCompany(CreateCompanyModel model)
-        {
-            //доделать таблицу токенов с их статусом, добваить возможность админу идалять пользователей, создавайть новых и наделять правами и ролями
-            string res = await _companyServices.CreateCompany(model.Company, model.User);
+        //[HttpPost]
+        //[Route("CreateCompany")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //public async Task<IActionResult> CreateCompany(CompanyModel model)
+        //{
+        //    //доделать таблицу токенов с их статусом, добваить возможность админу идалять пользователей, создавайть новых и наделять правами и ролями
+        //    string res = await _companyServices.CreateCompany(model.Company, model.User);
 
-            return Ok(res);
-        }
+        //    return Ok(res);
+        //}
 
 
     }
-    public class Tasks
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-        [JsonProperty("title")]
-        public string Title { get; set; }
-        [JsonProperty("isDone")]
-        public bool IsDone { get; set; }
-    }
+
 }

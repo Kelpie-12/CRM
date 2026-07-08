@@ -8,7 +8,7 @@ namespace CRM.Services
         Task<User> Login(string username, string password);
         Task<string> LoginInCompany(string username, string password);
         Task<string> Logout();
-        Task<string> CreateUser(UserDto user);
+        Task<UserDto> CreateUser(UserDto user);
         Task<string> ForgotPassword(string username);
 
     }

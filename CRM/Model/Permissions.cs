@@ -4,7 +4,7 @@
     {
         public const string Read= nameof(Read);
         public const string Delete= nameof(Delete);
-        public const string Edit= nameof(Edit);
+        public const string Update= nameof(Update);
         public const string Create= nameof(Create);
     }
 }

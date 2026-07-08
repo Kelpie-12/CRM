@@ -24,7 +24,33 @@ namespace CRM.Services.Auth
                  new Claim(ClaimTypes.NameIdentifier,user.UserName),
                  new Claim("firstName",user.FirstName),
                  new Claim("lastName",user.LastName),
-                // new Claim("selectCompany",user.LastName),
+                // new Claim("selectCompany",user.LastName),               
+                 new Claim(ClaimTypes.Role,user.Role),
+                 new Claim("id",user.Id.ToString())
+            };
+
+            JwtSecurityToken jwt = new JwtSecurityToken(
+                //expires: DateTime.UtcNow.Add(new TimeSpan()),
+                expires: DateTime.UtcNow.Add(_options.Value.Expires),
+                claims: claim,
+                signingCredentials: new SigningCredentials(
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Value.SecretKey)),
+                    SecurityAlgorithms.HmacSha256)
+                );
+
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
+            //throw new NotImplementedException();
+        }
+
+        public string GenerateTokenLoginCompany(User user,string selectedCompany)
+        {
+            List<Claim> claim = new List<Claim>()
+            {
+                 new Claim(ClaimTypes.NameIdentifier,user.UserName),
+                 new Claim("selectedCompany",selectedCompany),
+                 new Claim("firstName",user.FirstName),
+                 new Claim("lastName",user.LastName),
+                // new Claim("selectCompany",user.LastName),               
                  new Claim(ClaimTypes.Role,user.Role),
                  new Claim("id",user.Id.ToString())
             };

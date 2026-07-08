@@ -3,9 +3,11 @@ using System.Text.Json;
 using System.Text.Unicode;
 using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
 using CRM.Repositories;
 using Microsoft.Extensions.Configuration.UserSecrets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CRM.Services.Implementations
 {
@@ -26,7 +28,7 @@ namespace CRM.Services.Implementations
                 WriteIndented = true
             };
         }
-        public Task<string> CreateCompany(CompanyDto company, UserDto user)
+        public async Task<CreateCompanyResponse> CreateCompany(CompanyDto company, UserDto user)
         {
             //создавать одельную базу данных с базовами таблицами:
             //1. Задачи +
@@ -36,8 +38,9 @@ namespace CRM.Services.Implementations
             //5. Склад +
             //6. Работники +
 
-
-            return _companyRepository.CreateCompany(company, user);
+            return 
+                await _companyRepository.CreateCompany(company, user);
+            // return _companyRepository.CreateCompany(company, user);
         }
 
         public Task<string> DeleteCompany(int id)
@@ -48,12 +51,12 @@ namespace CRM.Services.Implementations
         public async Task<string> GetAllByUser(User user)
         {
             List<Company> companies = await _companyRepository.GetAllByUser(user);
-
+        
             JsonCompaniesListModel json = new JsonCompaniesListModel()
             {
-                UserId = user.Id,
+                User = user,
                 Companies = companies,
-                JwtToken = _jwtServices.GenerateToken(user)
+                Token = _jwtServices.GenerateToken(user)
             };
             string companyJson = JsonSerializer.Serialize(json, _options);
 
@@ -66,9 +69,20 @@ namespace CRM.Services.Implementations
             LoginCompanyModel model = new LoginCompanyModel();
             model.Company = await _companyRepository.GetById(id, userId);
             model.User = await _userRepository.GetUser(userId, id);
-            model.JWT = _jwtServices.GenerateToken(model.User);
+            model.Token = _jwtServices.GenerateToken(model.User);
             return model;
             //throw new NotImplementedException();
+        }
+
+        public async Task<LoginCompanyModel> GetLoginCompany(int id, int userId)
+        {
+            LoginCompanyModel model = new LoginCompanyModel();
+            model.Company = await _companyRepository.GetById(id, userId);
+            model.User = await _userRepository.GetUser(userId, id);
+            model.Token = _jwtServices.GenerateTokenLoginCompany(model.User,model.Company.Name);
+            return model;
+            
+           // throw new NotImplementedException();
         }
 
         public Task<string> SetRole(User user)

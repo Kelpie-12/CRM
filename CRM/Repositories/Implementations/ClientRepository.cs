@@ -1,7 +1,10 @@
-﻿using System.Data.SqlClient;
+﻿using System.ComponentModel.Design;
+using System.Data.SqlClient;
+using System.Runtime.CompilerServices;
 using CRM.Model;
 using CRM.Model.Data;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace CRM.Repositories.Implementations
@@ -14,7 +17,7 @@ namespace CRM.Repositories.Implementations
         }
         public async Task<Client> CreateClient(CompanyDto company, ClientDto client, UserDto user)
         {
-            Client res = null;
+            Client res =  new Client(); 
             using (SqlConnection con = CreateConnection(company.Name))
             {
                 con.Open();
@@ -24,18 +27,18 @@ namespace CRM.Repositories.Implementations
                                       "BEGIN " +
                                       "INSERT INTO [Clients] ([Clients].FirstName,[Clients].LastName,[Clients].[Status],[Clients].CreatedByUserId) " +
                                       "VALUES (@FirstName,@LastName,@Status,@UserId); " +
-                                      "SELECT Clients.Id,Clients.FirstName,Clients.LastName,[Status].[Name] " +
+                                      "SELECT Clients.FirstName,Clients.Id,Clients.LastName,[Status].[Name] " +
                                       "from [Clients],[Status] " +
                                       "where Clients.Id=(select Clients.Id from Clients where Clients.FirstName=@FirstName and Clients.LastName=@LastName) " +
                                       "and [Status].Id=[Clients].[Status] " +
                                       "END " +
                                       "ELSE BEGIN " +
-                                      "SELECT 'Такой пользователь уже существует' AS Result; " +
+                                      "SELECT 'Client already exist' AS Result; " +
                                       "END ";
                     cmd.Parameters.AddWithValue("FirstName", client.FirstName);
                     cmd.Parameters.AddWithValue("LastName", client.LastName);
                     cmd.Parameters.AddWithValue("UserId", user.Id);
-                    cmd.Parameters.AddWithValue("Status", 1);
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
 
 
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
@@ -45,13 +48,16 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-                            if (reader.GetString(0) != "Такой пользователь уже существует")
-                            {
-                                res = new Client();
-                                res.Id = reader.GetInt32(0);
-                                res.FirstName = reader.GetString(1);
+                            if (reader.GetString(0) != "Client already exist")
+                            {                               
+                                res.FirstName = reader.GetString(0);
+                                res.Id = reader.GetInt32(1);
                                 res.LastName = reader.GetString(2);
                                 res.Status = reader.GetString(3);
+                            }
+                            else
+                            {
+                                res.Id = -1;
                             }
 
                         }
@@ -72,42 +78,45 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<Client> EditingClient(CompanyDto company, ClientDto client, UserDto user)
+        public async Task<Client> UpdateClient(CompanyDto company, ClientDto client, UserDto user)
+
         {
             Client res = new Client();
-            using (SqlConnection con = CreateConnection(company.Name))
+            string companyName = company.Name;           
+
+            using (SqlConnection con = CreateConnection(companyName))
             {
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "update [Clients] " +
-                        "set [FirstName]=@FirstName, [LastName]=@LastName, [Status]=@Status,[UpdateByUserId]=UserId " +
-                        "where [Clients].Id=(select Clients.Id from Clients where Clients.FirstName=@FirstName and Clients.LastName=@LastName) " +
+                        "set [FirstName]=@FirstName, [LastName]=@LastName, [Status]=@Status,[UpdateByUserId]=@UserId,UpdatedAt=@date " +
+                        "where [Clients].Id=@ClientId " +
+                        //"(select Clients.Id from Clients where Clients.FirstName=@FirstName and Clients.LastName=@LastName) " +
                         "select Clients.Id,Clients.FirstName,Clients.LastName,[Status].[Name] " +
                         "from [Clients],[Status] " +
-                        "where Clients.Id=(select Clients.Id from Clients where Clients.FirstName=@FirstName and Clients.LastName=@LastName) " +
+                        "where Clients.Id=@ClientId " +
+                        //"(select Clients.Id from Clients where Clients.FirstName=@FirstName and Clients.LastName=@LastName) " +
                         "and [Status].Id=[Clients].[Status] ";
                     cmd.Parameters.AddWithValue("FirstName", client.FirstName);
+                    cmd.Parameters.AddWithValue("ClientId", client.Id);
                     cmd.Parameters.AddWithValue("LastName", client.LastName);
                     //cmd.Parameters.AddWithValue("ClientId", client.Id);
                     cmd.Parameters.AddWithValue("UserId", user.Id);
-                    cmd.Parameters.AddWithValue("Status", 1);
-
-
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
+                    cmd.Parameters.AddWithValue("date", DateTime.Now);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
+
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
                     if (reader.HasRows)
                     {
                         while (reader.Read())
-                        {
-                            if (reader.GetString(0) == "Успех")
-                            {
+                        {                            
                                 res.Id = reader.GetInt32(0);
                                 res.FirstName = reader.GetString(1);
                                 res.LastName = reader.GetString(2);
-                                res.Status = reader.GetString(3);
-                            }
+                                res.Status = reader.GetString(3);                            
                         }
                     }
                 }
@@ -131,18 +140,34 @@ namespace CRM.Repositories.Implementations
             return Task.FromResult(res);
         }
 
-        public async Task<ICollection<Client>> GetInfoListClients(CompanyDto company)
+        public async Task<ICollection<Client>> GetInfoListClients(int companyId)
         {
             //возвращать лист клиентов
             List<Client> res = new List<Client>();
-            using (SqlConnection con = CreateConnection(company.Name))
+            string companyName = "";
+            using (SqlConnection con = CreateConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "select Company.[Name] from Company where Company.Id=@id";
+                    cmd.Parameters.AddWithValue("id", companyId);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                            companyName = reader.GetString(0);
+                    }
+                }
+            }
+            using (SqlConnection con = CreateConnection(companyName))
             {
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "select Clients.Id,Clients.FirstName,Clients.LastName from Clients where Clients.Status=@Status";
 
-                    cmd.Parameters.AddWithValue("Status", 1);
+                    cmd.Parameters.AddWithValue("Status", Status.Active);
 
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -151,15 +176,14 @@ namespace CRM.Repositories.Implementations
                     {
                         while (reader.Read())
                         {
-
                             res.Add(
                                 new Client()
                                 {
                                     Id = reader.GetInt32(0),
-                                    FirstName=reader.GetString(1),
-                                    LastName=reader.GetString(2)
+                                    FirstName = reader.GetString(1),
+                                    LastName = reader.GetString(2)
                                 }
-                            ); 
+                            );
                         }
                     }
                 }
@@ -176,6 +200,31 @@ namespace CRM.Repositories.Implementations
 
             return await Task.FromResult(res);
 
+        }
+
+        public async Task<Task> DeleteClient(CompanyDto company, ClientDto client, UserDto user)
+        {            
+            string companyName = company.Name;     
+
+            using (SqlConnection con = CreateConnection(companyName))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "update [Clients] " +
+                        "set [Status]=@Status,[UpdateByUserId]=@UserId,UpdatedAt=@date " +
+                        "where [Clients].Id=@ClientId ";                    
+                    cmd.Parameters.AddWithValue("ClientId", client.Id);                
+                    cmd.Parameters.AddWithValue("UserId", user.Id);
+                    cmd.Parameters.AddWithValue("Status", Status.Deleted);             
+
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                  
+                }
+                con.Close();
+            }
+            return Task.CompletedTask;
         }
     }
 }
