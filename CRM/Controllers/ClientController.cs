@@ -1,7 +1,9 @@
 ﻿using System.Web.Http.Filters;
 using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -28,14 +30,13 @@ namespace CRM.Controllers
         [Route("Create")]
         public async Task<IActionResult> CreateClient([FromBody] ClientModel model)
         {
-            Client res = new Client();
-            res = await _clientServices.CreateClient(model);
-            if (res.Id != -1)
+            ClientResponse res  = await _clientServices.CreateClient(model);
+            if (res.Client.Id != -1)
             {
-                return CreatedAtAction(nameof(CreateClient), new { message = "Client created" }, res);
+                return CreatedAtAction(nameof(CreateClient), res);
             }
             return StatusCode(StatusCodes.Status409Conflict,
-              new { message = "Client with this last name and first name already registered", error = "client_already_exist" });
+             res);
 
 
         }
@@ -44,9 +45,13 @@ namespace CRM.Controllers
         [Route("Update")]
         public async Task<IActionResult> UpdateClient([FromBody] ClientModel model)
         {
-            Client res = new Client();
-            res = await _clientServices.UpdateClient(model);
-            return StatusCode(StatusCodes.Status200OK, new { message = "Client was update" });
+            ClientResponse res = await _clientServices.UpdateClient(model);
+            if (res.Client.Id==-1)
+            {
+            return StatusCode(StatusCodes.Status200OK,res);
+
+            }
+            return StatusCode(StatusCodes.Status409Conflict,res);
 
         }
         [HttpDelete]
@@ -98,11 +103,15 @@ namespace CRM.Controllers
         [HttpGet]
         [Route("GetAll/{companyId}")]
         [Authorize(Policy = Permissions.Read)]
-        public async Task<IActionResult> GetAll(int companyId)
+        public async Task<IActionResult> GetAll(int companyId, [FromQuery] int status = Status.Active)
         {
             //проверки подлиности запросов
-
-            return Ok(await _clientServices.GetInfoListClients(companyId));
+            if (companyId < 0) 
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new { message = "The wrong company was selected" });
+            }
+                return StatusCode(StatusCodes.Status200OK, new { message = "All clients",response= await _clientServices.GetInfoListClients(companyId, status) } );
+            //return Ok();
         }
     }
 }

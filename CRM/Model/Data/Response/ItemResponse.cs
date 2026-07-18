@@ -1,6 +1,6 @@
 ﻿namespace CRM.Model.Data.Response
 {
-    public class CreateItemResponse
+    public class ItemResponse
     {
         public string ?Error{ get; set; }
         public string ?Message{ get; set; }

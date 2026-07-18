@@ -2,6 +2,7 @@
 using System.Text.Json;
 using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
 using CRM.Repositories;
 
@@ -14,7 +15,7 @@ namespace CRM.Services.Implementations
         {
             _clientRepository = clientRepository;
         }
-        public Task<Client> CreateClient(ClientModel model)
+        public Task<ClientResponse> CreateClient(ClientModel model)
         {
             return _clientRepository.CreateClient(model.Company, model.Client, model.User);
         }
@@ -24,7 +25,7 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public Task<Client> UpdateClient(ClientModel model)
+        public Task<ClientResponse> UpdateClient(ClientModel model)
         {
             return _clientRepository.UpdateClient(model.Company, model.Client, model.User);
         }
@@ -37,9 +38,9 @@ namespace CRM.Services.Implementations
             return res;
         }
 
-        public async Task<ICollection<Client>> GetInfoListClients(int companyId)
+        public async Task<ICollection<Client>> GetInfoListClients(int companyId, int status)
         {
-            return await _clientRepository.GetInfoListClients(companyId);
+            return await _clientRepository.GetInfoListClients(companyId, status);
         }
 
         public Task<string> GetInfoSalesClient(string data)

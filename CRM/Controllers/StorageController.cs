@@ -2,6 +2,7 @@
 using CRM.Model.Data;
 using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -27,7 +28,7 @@ namespace CRM.Controllers
         [Route("Create")]
         public async Task<IActionResult> CreateItem([FromBody] ItemModel item)
         {
-            CreateItemResponse response = await _storageServices.CreateItem(item);
+            ItemResponse response = await _storageServices.CreateItem(item);
             if (response.Item.Id != -1)
             {
                 return StatusCode(StatusCodes.Status201Created, response);//new { message = response.Message, Item = response.Item,Error=response.Error });
@@ -45,14 +46,13 @@ namespace CRM.Controllers
         [Authorize(Policy = Permissions.Update)]
         public async Task<IActionResult> UpdateItem([FromBody] ItemModel item)
         {
-            Item res = new Item();
-            res = await _storageServices.UpdateItem(item);
-            if (res.Id != 1)
+            ItemResponse res =  await _storageServices.UpdateItem(item);
+            if (res.Item.Id != 1)
             {
-                return StatusCode(StatusCodes.Status201Created, new { message = "Item was created", Item = res });
+                return StatusCode(StatusCodes.Status200OK,res);
             }
             else
-                return StatusCode(StatusCodes.Status400BadRequest, new { message = "Created was fail", error = "error_create_item_fail" });
+                return StatusCode(StatusCodes.Status400BadRequest, res);
 
 
         }
@@ -88,9 +88,9 @@ namespace CRM.Controllers
         [HttpGet]
         [Route("GetAll/{companyId}/{companyName}")]
         [Authorize(Policy = Permissions.Read)]
-        public async Task<IActionResult> GetAll(int companyId, string companyName)
+        public async Task<IActionResult> GetAll(int companyId, string companyName, [FromQuery] int status = Status.Active)
         {
-            ICollection<Item> items = await _storageServices.GetAll(new CompanyDto { Name = companyName, Id = companyId });
+            ICollection<Item> items = await _storageServices.GetAll(new CompanyDto { Name = companyName, Id = companyId }, status);
             return StatusCode(StatusCodes.Status200OK, items);
 
             //return  Ok("GETALLL");

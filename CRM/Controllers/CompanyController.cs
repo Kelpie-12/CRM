@@ -38,7 +38,7 @@ namespace CRM.Controllers
         //[Authorize(Roles =Roles.Admin)]
         public async Task<IActionResult> CreateCompany([FromBody]CompanyModel company)
         {
-            CreateCompanyResponse response = await _companyServices.CreateCompany(company.Company,company.User);
+            CompanyResponse response = await _companyServices.CreateCompany(company.Company,company.User);
             if (response.Company.Id== -1)
             {
                 return StatusCode(StatusCodes.Status400BadRequest,

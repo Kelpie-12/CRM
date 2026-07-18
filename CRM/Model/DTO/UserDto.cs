@@ -17,6 +17,8 @@ namespace CRM.Model.DTO
         [JsonProperty("username")]
         public string? UserName { get; set; }
         [JsonProperty("password")]
-        public string? Password { get; set; }    
+        public string? Password { get; set; }
+        [JsonProperty("role")]
+        public string? Role { get; set; }
     }
 }

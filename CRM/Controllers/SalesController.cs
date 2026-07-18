@@ -1,6 +1,8 @@
 ﻿using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CRM.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class SalesController : Controller
@@ -20,32 +22,48 @@ namespace CRM.Controllers
         }
 
         [HttpPost]
-        [Route("/CreateSales")]
+        [Route("Create")]
         [Authorize(Policy = Permissions.Create)]
-        public async Task<IActionResult> CreateSales([FromBody] CreateSaleModel model)
+        public async Task<IActionResult> CreateSales([FromBody] SaleModel model)
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _salesServices.CreateSales(model));
+                SaleResponse response = await _salesServices.CreateSales(model);
+                if (response.Sales.Id != -1)
+                {
+                    return StatusCode(StatusCodes.Status201Created, response);
+                }
+                return StatusCode(StatusCodes.Status400BadRequest, response);
+            }
+            return BadRequest(new { message = "Incorrect data! Check data", error = "error_incorrect_data" });
+        }
+
+        [HttpDelete]
+        [Route("Delete")]
+        [Authorize(Policy = Permissions.Delete)]
+        public async Task<IActionResult> DeleteSales([FromBody] CompanyDto company, int saleId)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _salesServices.DeleteSales(saleId, company));
             }
             return BadRequest("Переданы не верные данные");
         }
 
-       [HttpDelete]
-       [Route("/DeleteSales")]
-       [Authorize(Policy = Permissions.Delete)]
-       public async Task<IActionResult> DeleteSales([FromBody] CompanyDto company,int saleId)
-       {          
-           if (ModelState.IsValid)
-           {
-               return Ok(await _salesServices.DeleteSales(saleId,company));
-           }
-           return BadRequest("Переданы не верные данные");
-       }
-
+        [HttpPut]
+        [Route("Cancel")]
+        [Authorize(Policy = Permissions.Update)]
+        public async Task<IActionResult> CancelSales([FromBody]SaleCancelModel sale )
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _salesServices.CancelSales(sale));
+            }
+            return BadRequest(new { message = "Incorrect data! Check data", error = "error_incorrect_data" });
+        }
 
         [HttpPost]
-        [Route("/CreateSalesForClient")]
+        [Route("CreateSalesForClient")]
         public async Task<IActionResult> CreateSalesForClient(string data)
         {
             return Ok();
@@ -66,10 +84,11 @@ namespace CRM.Controllers
         }
 
         [HttpGet]
-        [Route("/GetInfoListSales")]
-        public async Task<string> GetInfoListSales(int id)
+        [Route("GetAll/{companyId}/{companyName}")]
+        public async Task<IActionResult> GetAll(int companyId, string companyName,[FromQuery]int status)
         {
-            return "InfoListSales item";
+            return StatusCode(StatusCodes.Status200OK,
+                await _salesServices.GetAll(new CompanyDto() { Id = companyId, Name = companyName },status));
         }
 
     }

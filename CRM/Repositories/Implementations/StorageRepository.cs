@@ -19,9 +19,9 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<CreateItemResponse> CreateItem(ItemModel item)
+        public async Task<ItemResponse> CreateItem(ItemModel item)
         {
-            CreateItemResponse response = new CreateItemResponse()
+            ItemResponse response = new ItemResponse()
             {
                 Message = "Item was created!",
                 Error = "none",
@@ -84,13 +84,13 @@ namespace CRM.Repositories.Implementations
                     }
                     catch (Exception e)
                     {
-                        response.Error=e.Message;
-                        response.Message="Created item was fail! Check data!";
+                        response.Error = e.Message;
+                        response.Message = "Created item was fail! Check data!";
                         response.Item.Id = -1;
                         //throw;
                     }
                     //cmd.ExecuteNonQuery(); 
-                   
+
                 }
                 con.Close();
             }
@@ -125,7 +125,7 @@ namespace CRM.Repositories.Implementations
             //  return Task.FromResult(false);
         }
 
-        public async Task<ICollection<Item>> GetAll(CompanyDto company)
+        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status)
         {
 
             List<Item> res = new List<Item>();
@@ -135,11 +135,12 @@ namespace CRM.Repositories.Implementations
                 using (SqlCommand cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "select  [Storage].Article,[Storage].Name," +
-                                      "[Storage].Count,[Storage].Price,[Storage].[Status],[Storage].Id,[Storage].PurchasePrice " +
+                                      "[Storage].Count,[Storage].Price,[Storage].[Status],[Storage].Id," +
+                                      "[Storage].PurchasePrice " +
                                       "from [Storage]" +
                                       "where [Storage].Status=@Status";
 
-                    cmd.Parameters.AddWithValue("Status", Status.Active);
+                    cmd.Parameters.AddWithValue("Status", status);
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
@@ -155,7 +156,7 @@ namespace CRM.Repositories.Implementations
                             //item.Price = reader.GetInt32(3);
                             item.Status = reader.GetInt32(4);
                             item.Id = reader.GetInt32(5);
-                            item.PurchasePrice = -1;// reader.GetInt32(5);
+                            item.PurchasePrice = reader.GetDecimal(6);
                             res.Add(item);
                         }
                     }
@@ -187,9 +188,14 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<Item> UpdateItem(ItemModel item)
+        public async Task<ItemResponse> UpdateItem(ItemModel item)
         {
-            Item res = new Item();
+            ItemResponse res = new ItemResponse()
+            {
+                Error = "none",
+                Message = "Item was updated!",
+                Item = new Item()
+            };
             using (SqlConnection con = CreateConnection(item.Company.Name))
             {
                 con.Open();
@@ -199,7 +205,7 @@ namespace CRM.Repositories.Implementations
                                       "set @eId=(select [Employee].[Id] from [Employee] where [Employee].[UserId]=@UserId)" +
                                       "update [Storage] " +
                                       "set [Name]=@Name,Article=@Article,[Count]=@Count,Price=@Price," +
-                                      "PurchasePrice=@PurchasePrice,EmloyeeUpdateId=@eId " +
+                                      "PurchasePrice=@PurchasePrice,EmployeeUpdateId=@eId " +
                                       "where Id=@Id " +
                                       "select [Storage].[Name],[Storage].[Id],[Storage].Article," +
                                       "[Storage].[Count],[Storage].Price,[Storage].PurchasePrice,[Storage].[Status] " +
@@ -216,32 +222,35 @@ namespace CRM.Repositories.Implementations
 
 
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                    //cmd.ExecuteNonQuery(); 
-                    if (reader.HasRows)
+                    try
                     {
-                        while (reader.Read())
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        //cmd.ExecuteNonQuery(); 
+                        if (reader.HasRows)
                         {
-                            if (reader.GetString(0) != "Item already exist")
+                            while (reader.Read())
                             {
-                                res.Name = reader.GetString(0);
-                                res.Id = reader.GetInt32(1);
-                                res.Article = reader.GetInt32(2);
-                                res.Count = reader.GetInt32(3);
-                                res.Price = reader.GetDecimal(4);
-                                res.PurchasePrice = -1;//reader.GetDecimal(5);
-                                res.Status = reader.GetInt32(6);
-                                return res;
+                                res.Item.Name = reader.GetString(0);
+                                res.Item.Id = reader.GetInt32(1);
+                                res.Item.Article = reader.GetInt32(2);
+                                res.Item.Count = reader.GetInt32(3);
+                                res.Item.Price = reader.GetDecimal(4);
+                                res.Item.PurchasePrice = -1;//reader.GetDecimal(5);
+                                res.Item.Status = reader.GetInt32(6);
+                                //return res;
                             }
-                            res.Id = -1;
-
                         }
                     }
+                    catch (Exception e)
+                    {
+                        res.Error = "error_update_item";
+                        res.Message = e.Message;
+                        res.Item.Id = -1;
+                    }
+
                 }
                 con.Close();
             }
-
-
             return res;
         }
 

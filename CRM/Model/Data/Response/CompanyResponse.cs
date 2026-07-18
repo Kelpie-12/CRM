@@ -2,7 +2,7 @@
 
 namespace CRM.Model.Data.Response
 {
-    public class CreateCompanyResponse
+    public class CompanyResponse
     {
         public string? Message { get; set; }
         public string? Error { get; set; }

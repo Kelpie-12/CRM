@@ -1,6 +1,6 @@
 ﻿using CRM.Model;
 
-namespace CRM.Repositories.Implementations
+namespace CRM.Repositories
 {
     public interface IPermissionsRepository
     {

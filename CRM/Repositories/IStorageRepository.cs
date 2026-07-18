@@ -7,12 +7,12 @@ namespace CRM.Repositories
 {
     public interface IStorageRepository
     {
-        Task<CreateItemResponse> CreateItem(ItemModel item);
+        Task<ItemResponse> CreateItem(ItemModel item);
         Task<bool> WriteOffItem(string data);
         Task<bool> ArrivalItem(string data);
         Task<Task> DeleteItem(ItemModel item);
-        Task<Item> UpdateItem(ItemModel item);
-        Task<ICollection<Item>> GetAll(CompanyDto company);
+        Task<ItemResponse> UpdateItem(ItemModel item);
+        Task<ICollection<Item>> GetAll(CompanyDto company, int status);
         Task<string> GetInfoItem(string data);
         Task<string> GetInfoWriteOffItem(string data);
         Task<string> GetInfoArrivalItem(string data);

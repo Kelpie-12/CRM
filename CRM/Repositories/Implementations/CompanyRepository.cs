@@ -1,10 +1,16 @@
-﻿using System.Data.SqlClient;
+﻿using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Diagnostics.Metrics;
+using System.Transactions;
+using System.Xml.Linq;
 using Autofac.Core;
 using CRM.Model;
 using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.SqlServer.Server;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CRM.Repositories.Implementations
 {
@@ -15,14 +21,14 @@ namespace CRM.Repositories.Implementations
         {
 
         }
-        public async Task<CreateCompanyResponse> CreateCompany(CompanyDto company, UserDto user)
+        public async Task<CompanyResponse> CreateCompany(CompanyDto company, UserDto user)
         {
-            CreateCompanyResponse response = new CreateCompanyResponse()
+            CompanyResponse response = new CompanyResponse()
             {
                 Message = "Fail!",
                 Error = "error_create_company",
                 Company = new CompanyDto() { Name = company.Name }
-            };    
+            };
             CompanyDto tmp = new CompanyDto();
             using (SqlConnection con = CreateConnection())
             {
@@ -72,18 +78,33 @@ namespace CRM.Repositories.Implementations
                     if (response.Message != "Fail! Company already exist")
                     {
                         response.Company.Id = Convert.ToInt32(response.Message);
-                        if (await CreateTrigger(company) == "Fail!")
+                        if (await CreateProcedureNewSale(company) == "Fail!")
                         {
-                            response.Message = "Create trigger fail!";
-                            response.Error = "error_create_trigger_fail";
+                            response.Message = "Create NewSale procedure fail!";
+                            response.Error = "error_create_procedure_fail";
+                            response.Company.Id = -1;
+
+                        }
+                        else
+                        {
+                            response.Message = "Created new company!";
+                            response.Error = "none";
+                        }
+                        if (await CreateProcedureCancelSale(company) == "Fail")
+                        {
+                            response.Message = "Create CancelSale procedure fail!";
+                            response.Error = "error_create_procedure_fail";
                             response.Company.Id = -1;
                         }
-                        response.Message = "Created new company!";
-                        response.Error = "none";
+                        else
+                        {
+                            response.Message = "Created new company!";
+                            response.Error = "none";
+                        }
                     }
                     else
                     {
-                        tmp.Id = -1;                       
+                        tmp.Id = -1;
                     }
 
                 }
@@ -114,6 +135,160 @@ namespace CRM.Repositories.Implementations
                             "set Storage.[Count]=Storage.[Count]-@count " +
                             "where Storage.Id =(select ItemId from inserted)  " +
                             "END;";
+
+                        await cmd.ExecuteNonQueryAsync();
+                        res = "Success!";
+                    }
+                    catch (Exception e)
+                    {
+                        //Console.WriteLine(e.Message);
+                        return $"Error - {e.Message}";
+                    }
+                }
+                con.Close();
+            }
+            return res;
+        }
+
+        private async Task<string> CreateProcedureNewSale(CompanyDto company)
+        {
+            string res = "Fail!";
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    try
+                    {
+                        cmd.CommandType = System.Data.CommandType.Text;
+                        cmd.CommandText =
+                           "Create PROCEDURE New_Sale " +
+                           "@Count as int," +
+                           "@ItemId as int," +
+                           "@UserId as int," +
+                           "@ClientId as int," +
+                           "@CashboxName as nvarchar(150) " +
+                           "as begin " +
+                           "begin TRANSACTION; " +
+                           "declare @countItem int " +
+                           "set @countItem=(select [Storage].[Count] from Storage where Storage.Id=@ItemId) " +
+                           "if(@countItem > @Count) " +
+                           " begin " +
+                           " declare @eId int " +
+                           " declare @Status int " +
+                           " set @Status=(select [Status].[Id] from [Status] where [Status].[Name]='Active')" +
+                           " set @eId =(select Id from Employee where UserId=@UserId) " +
+
+                           " insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status]) " +
+                           " values ((select Id from Cashbox where Cashbox.Name=@CashboxName)," +
+                           "         (select Id from OperationType where OperationType.Name='Income')," +
+                           "         @Count*(select Price from Storage where Storage.Id=@ItemId)," +
+                           "         CAST(GETDATE() as int),@Status);" +
+
+                           " INSERT INTO [dbo].[Sales] ([EmployeeId],[Status],[ItemId],[ItemArticle],[Count],[ClientId],[TransactionsId]) " +
+                           " VALUES (@eId," +
+                           "         @Status," +
+                           "         @ItemId," +
+                           "         (select [Storage].[Article] from Storage where Storage.Id=@ItemId)," +
+                           "         @Count," +
+                           "         @ClientId," +
+                           "         (SELECT SCOPE_IDENTITY()))" +
+
+                           " select Sales.Id,Sales.EmployeeId,Sales.ItemArticle,Sales.[Count],Sales.CreatedAt,Sales.Status,Sales.ItemId,Sales.TransactionsId " +
+                           " from Sales where Sales.Id=(SELECT SCOPE_IDENTITY())" +
+
+                           " update Storage " +
+                           " set Storage.[Count]=Storage.[Count]-@Count" +
+                           " where Storage.Id =@ItemId " +//(select ItemId from Sales where Sales.Id=(SELECT SCOPE_IDENTITY()))
+
+                           " declare @balanceNow as int " +
+                           " set @balanceNow =(select Cashbox.Balance from Cashbox" +
+                           "                   where Cashbox.Id =(select Id from Cashbox where Cashbox.Name=@CashboxName))" +
+
+                           " update Cashbox " +
+                           " set Cashbox.Balance=@balanceNow+ (@Count*(select Price from Storage where Storage.Id=@ItemId))" +
+                           " where Cashbox.Id =(select Id from Cashbox where Cashbox.Name=@CashboxName)" +
+
+                           " end  " +
+                           "else " +
+                           " select -1 as Result " +
+                           "end; " +
+                           "commit;";
+
+                        await cmd.ExecuteNonQueryAsync();
+                        res = "Success!";
+                    }
+                    catch (Exception e)
+                    {
+                        //Console.WriteLine(e.Message);
+                        return $"Error - {e.Message}";
+                    }
+                }
+                con.Close();
+            }
+            return res;
+        }
+
+        private async Task<string> CreateProcedureCancelSale(CompanyDto company)
+        {
+            string res = "Fail!";
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    try
+                    {
+                        cmd.CommandType = System.Data.CommandType.Text;
+                        cmd.CommandText =
+                        "Create PROCEDURE [dbo].[Cancel_Sale]                                                       " +
+                        "@SaleId as int,                                                                                                      " +
+                        "@CashboxName as nvarchar(150)                                                                                        " +
+                        "as                                                                                                                   " +
+                        "begin                                                                                                                " +
+                        "	begin TRANSACTION;                                                                                                " +
+                        "                                                                                                                     " +
+                        "		declare @transId as int                                                                                       " +
+                        "		declare @amount as int                                                                                        " +
+                        "		declare @itemId as int                                                                                        " +
+                        "		set @transId =(select Sales.TransactionsId from Sales where Sales.Id=@SaleId)                                 " +
+                        "		set @amount =(select Amount from Transactions where Transactions.Id=@transId)                                 " +
+                        "		set @itemId =(select Sales.ItemId from Sales where Sales.Id=@SaleId)                                          " +
+                        "		                                                                                                              " +
+                        "		update Storage                                                                                                " +
+                        "		set Storage.[Count]=Storage.[Count]+(select Sales.[Count] from Sales where Sales.Id=@SaleId)                       " +
+                        "		where Storage.Id =(@itemId)  " +
+                        "                                                                                 " +
+                        "	    update Sales                     " +
+                        "       set Sales.[Status]=(select [Status].Id from [Status] where [Status].[Name]='Canceled')" +
+                        "       where Sales.Id =(@SaleId)   " +
+                        "                                                                                                        " +
+                        "		insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status])                       " +
+                        "		values ((select Id from Cashbox where Cashbox.Name=@CashboxName),                                             " +
+                        "				(select Id from OperationType where OperationType.Name='Outcome'),                                    " +
+                        "				@amount,                                                                                              " +
+                        "				CAST(GETDATE() as int),                                                                               " +
+                        "				(select [Status].[Id] from [Status] where [Status].[Name]='Active'));                                 " +
+                        "                                                                                                                     " +
+                        "                                                                                                                     " +
+                        "		 declare @balanceNow as int                                                                                   " +
+                        "		 set @balanceNow = (select Cashbox.Balance                                                                    " +
+                        "						  from Cashbox                                                                                " +
+                        "						  where Cashbox.Id =(select CashboxId from Transactions                                       " +
+                        "											 where Transactions.Id=@transId))                                         " +
+                        "		                                                                                                              " +
+                        "		 update Cashbox                                                                                               " +
+                        "		 set Cashbox.Balance=@balanceNow - @amount                                                                    " +
+                        "		 where Cashbox.Id =(select CashboxId from Transactions where Transactions.Id=@transId)                        " +
+                        "		                                                                                                              " +
+                        "		                                                                                                              " +
+                        "		select Sales.Id,Sales.EmployeeId,Sales.ItemArticle,Sales.[Count],                                             " +
+                        "       Sales.CreatedAt,Sales.Status,Sales.ItemId,TransactionsId                                                      " +
+                        "		from Sales where Sales.Id=@SaleId                                                                             " +
+                        "		                                                                                                              " +
+                        "	                                                                                                                  " +
+                        "	end  	                                                                                                          " +
+                        "commit;";
 
                         await cmd.ExecuteNonQueryAsync();
                         res = "Success!";

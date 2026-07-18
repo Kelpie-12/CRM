@@ -28,7 +28,7 @@ namespace CRM.Services.Implementations
                 WriteIndented = true
             };
         }
-        public async Task<CreateCompanyResponse> CreateCompany(CompanyDto company, UserDto user)
+        public async Task<CompanyResponse> CreateCompany(CompanyDto company, UserDto user)
         {
             //создавать одельную базу данных с базовами таблицами:
             //1. Задачи +

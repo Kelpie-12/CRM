@@ -2,7 +2,9 @@
 using System.Data.SqlClient;
 using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
+using CRM.Model.LocalStorage;
 
 namespace CRM.Repositories.Implementations
 {
@@ -12,47 +14,128 @@ namespace CRM.Repositories.Implementations
         {
         }
 
-        public async Task<string> CreateSales(CreateSaleModel model)
+        public async Task<SaleResponse> CancelSale(SaleCancelModel sale)
         {
-            string res = "Ошибка создания продажи";
-            using (SqlConnection con = CreateConnection(model.Company.Name))
+            SaleResponse response = new SaleResponse()
+            {
+                Message = "Sale cancel!",
+                Error = "none",
+                Sales = new Sales() 
+            };
+            using (SqlConnection con = CreateConnection(sale.Company.Name))
             {
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText = "declare @countItem int " +
-                        "set @countItem=(select [Storage].[Count] from Storage where Storage.Id=@ItemId) " +
-                        "if(@countItem > @Count) " +
-                        "begin " +
-                            "INSERT INTO [dbo].[Sales] ([EmployeeId],[Status],[ItemId],[ItemArticle],[Count],[ClientId]) " +
-                            "VALUES (@EmployeeId,@Status,@ItemId, " +
-                            "(select [Storage].[Article] from Storage where Storage.Id=1),@Count,1) " +
-                            "select 'Успешно' as Result " +
-                            "end " +
-                        "else " +
-                            "select 'Недостаточно товара' as Result";
-                    cmd.Parameters.AddWithValue("@EmployeeId", model.Employee.Id);
-                    cmd.Parameters.AddWithValue("@ItemId", model.Item.Id);
-                    cmd.Parameters.AddWithValue("@Count", model.Item.Count);
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.CommandText = "Cancel_sale";
 
-                    cmd.Parameters.AddWithValue("Status", 1);
-
-
-                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                    //cmd.ExecuteNonQuery(); 
-                    if (reader.HasRows)
+                    cmd.Parameters.AddWithValue("@SaleId", sale.Sale.Id);         
+                    cmd.Parameters.AddWithValue("@CashboxName", "Main");
+                    try
                     {
-                        while (reader.Read())
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        //cmd.ExecuteNonQuery(); 
+                        if (reader.HasRows)
                         {
-                            res = reader.GetString(0);
+                            while (reader.Read())
+                            {
+                                response.Sales.Id = reader.GetInt32(0);
+                                if (response.Sales.Id != -1)
+                                {
+                                    response.Sales.EmployeeId = reader.GetInt32(1);
+                                    response.Sales.Article = reader.GetInt32(2);
+                                    response.Sales.Count = reader.GetInt32(3);
+                                    response.Sales.SalesDate = reader.GetDateTime(4);
+                                    response.Sales.Status = reader.GetInt32(5);
+                                    response.Sales.ItemId = reader.GetInt32(6);
+                                    response.Sales.TransitionId = reader.GetInt32(7);
+                                }
+                                else
+                                {
+                                    response.Message = "Insufficient quantity!";
+                                    response.Error = "error_cancel_sale";
+                                }
+                            }
                         }
+                    }
+                    catch (Exception e)
+                    {
+                        response.Message = e.Message;
+                        response.Error = "error_cancel_sale";
+                        response.Sales.Id = -1;
                     }
                 }
                 con.Close();
             }
 
-            return res;
+
+            return response;
+        }
+
+        public async Task<SaleResponse> CreateSales(SaleModel model)
+        {
+            SaleResponse response = new SaleResponse()
+            {
+                Message = "Sale created!",
+                Error = "none",
+                Sales = new Sales()
+            };
+
+            using (SqlConnection con = CreateConnection(model.Company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.CommandText = "New_Sale";
+                    
+                    cmd.Parameters.AddWithValue("@UserId", model.Employee.Id);
+                    cmd.Parameters.AddWithValue("@ItemId", model.Item.Id);
+                    cmd.Parameters.AddWithValue("@Count", model.Item.Count);
+                    cmd.Parameters.AddWithValue("@ClientId", model.Client?.Id ?? 1);
+                    cmd.Parameters.AddWithValue("@CashboxName", "Main");
+
+
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    try
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        //cmd.ExecuteNonQuery(); 
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                response.Sales.Id = reader.GetInt32(0);
+                                if (response.Sales.Id != -1)
+                                {
+                                    response.Sales.EmployeeId = reader.GetInt32(1);
+                                    response.Sales.Article = reader.GetInt32(2);
+                                    response.Sales.Count = reader.GetInt32(3);
+                                    response.Sales.SalesDate = reader.GetDateTime(4);
+                                    response.Sales.Status = reader.GetInt32(5);
+                                    response.Sales.ItemId = reader.GetInt32(6);
+                                    response.Sales.TransitionId = reader.GetInt32(7);
+                                }
+                                else
+                                {
+                                    response.Message = "Insufficient quantity!";
+                                    response.Error = "error_create_sale_no_count";
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        response.Message = e.Message;
+                        response.Error = "error_create_sale";
+                        response.Sales.Id = -1;
+                    }
+                }
+                con.Close();
+            }
+
+            return response;
         }
 
         public Task<bool> CreateSalesForClient(string data)
@@ -60,7 +143,7 @@ namespace CRM.Repositories.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<string> DeleteSales(int saleId, CompanyDto company)
+        public async Task<Task> DeleteSales(int saleId, CompanyDto company)
         {
             string res = "Ошибка редактирования продажи";
             using (SqlConnection con = CreateConnection(company.Name))
@@ -90,12 +173,50 @@ namespace CRM.Repositories.Implementations
                 con.Close();
             }
 
-            return res;
+            return Task.CompletedTask;
         }
 
-        public Task<string> GetInfoListSales(string data)
+        public async Task<ICollection<Sales>> GetAll(CompanyDto company,int status)
         {
-            throw new NotImplementedException();
+            ICollection<Sales> sales = new List<Sales>();
+            using (SqlConnection con = CreateConnection(company.Name))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "select Sales.Id,Sales.EmployeeId," +
+                        "Sales.ItemArticle,Sales.[Count],Sales.CreatedAt,Sales.Status,Sales.ItemId,Sales.TransactionsId " +
+                        "from Sales where Sales.Status=@Status";
+                    //cmd.Parameters.AddWithValue("@EmployeeId", model.Employee.Id);
+                    //cmd.Parameters.AddWithValue("@ItemId", model.Item.Id);
+                    //cmd.Parameters.AddWithValue("@Count", model.Item.Count);
+
+                    cmd.Parameters.AddWithValue("Status",status);
+                    //cmd.Parameters.AddWithValue("CompanyId", "-1");
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    //cmd.ExecuteNonQuery(); 
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            sales.Add(new Sales()
+                            {
+                                Id= reader.GetInt32(0),
+                                EmployeeId = reader.GetInt32(1),
+                                Article = reader.GetInt32(2),
+                                Count = reader.GetInt32(3),
+                                SalesDate = reader.GetDateTime(4),
+                                Status = reader.GetInt32(5),
+                                ItemId = reader.GetInt32(6),
+                                TransitionId = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+                            });
+                        }
+                    }
+                }
+                con.Close();
+            }
+
+            return sales;
         }
 
         public Task<string> GetInfoSales(string data)
@@ -104,6 +225,11 @@ namespace CRM.Repositories.Implementations
         }
 
         public Task<string> GetInfoSalesByClient(string data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SaleResponse> UpdateSales(SaleModel model)
         {
             throw new NotImplementedException();
         }

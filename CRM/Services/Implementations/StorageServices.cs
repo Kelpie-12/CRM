@@ -20,13 +20,13 @@ namespace CRM.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task<CreateItemResponse> CreateItem(ItemModel item)
+        public async Task<ItemResponse> CreateItem(ItemModel item)
         {
             //проверки
             return await _storageRepository.CreateItem(item);
             
         }
-        public async Task<Item> UpdateItem(ItemModel item)
+        public async Task<ItemResponse> UpdateItem(ItemModel item)
         {
             return await _storageRepository.UpdateItem(item);
         }
@@ -39,9 +39,9 @@ namespace CRM.Services.Implementations
            return false;
         }
 
-        public async Task<ICollection<Item>> GetAll(CompanyDto company)
+        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status)
         {
-            return await _storageRepository.GetAll(company);
+            return await _storageRepository.GetAll(company, status);
         }
 
         public Task<string> GetInfoArrivalItem(string data)

@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using CRM.Repositories;
-using CRM.Repositories.Implementations;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CRM.Services.Auth

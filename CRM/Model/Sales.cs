@@ -4,21 +4,14 @@ namespace CRM.Model
 {
     public class Sales
     {
-        [JsonProperty("employeeId")]
-        public int EmployeeId { get; set; }
-        [JsonProperty("id")]
-        public int Id { get; set; }
-        [JsonProperty("createdAt")]
-        public DateTime SalesDate { get; set; }
-        [JsonProperty("status")]
-        public int SalesStatus { get; set; }
-        [JsonProperty("count")]
-        public decimal Count{ get; set; }
-        [JsonProperty("itemId")]
+        public int EmployeeId { get; set; }      
+        public int Id { get; set; }   
+        public DateTime SalesDate { get; set; }       
+        public int Status { get; set; }       
+        public decimal Count{ get; set; }      
         public int ItemId { get; set; } 
-
-        [JsonProperty("article")]
-        public int ItetmArticle {  get; set; }  
+        public int Article {  get; set; }  
+        public int? TransitionId { get; set; }
 
     }
 }
