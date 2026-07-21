@@ -116,7 +116,7 @@ namespace CRM.Repositories.Implementations
                 {
                     cmd.CommandText = "use [CRM] SELECT U.[UserName],U.[Id],U.[Password],U.[FirstName],U.[LastName],U.[CreatedAt],U.[Status],R.[Name] " +
                         "FROM [dbo].[User] as U,CompanyRole as CR, [Role] as R " +
-                        "where U.[Id] = @UserId and CR.[Role] = R.Id and CR.[CompanyId] = @CompanyId";
+                        "where U.[Id] = @UserId and CR.UserId=@UserId and CR.[Role] = R.Id and CR.[CompanyId] = @CompanyId";
                     cmd.Parameters.AddWithValue("UserId", userId);
                     cmd.Parameters.AddWithValue("CompanyId", companyId);
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -131,7 +131,7 @@ namespace CRM.Repositories.Implementations
                             user.FirstName = reader.GetString(3);
                             user.LastName = reader.GetString(4);
                             user.CreatedAt = reader.GetDateTime(5);
-                            user.Status = -1;//Convert.IsDBNull(reader.GetInt32(6))? -1: reader.GetInt32(6);
+                            user.Status = 1;//Convert.IsDBNull(reader.GetInt32(6))? -1: reader.GetInt32(6);
                             user.Role = reader.GetString(7);
                             return user;
                         }

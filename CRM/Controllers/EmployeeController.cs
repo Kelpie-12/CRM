@@ -1,5 +1,6 @@
 using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
 using CRM.Model.LocalStorage;
 using CRM.Services;
@@ -26,7 +27,7 @@ namespace CRM.Controllers
         [Route("Create")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeModel model)
         {
-            var response = await _employeeServices.CreateEmployee(model);
+            EmployeeResponse response = await _employeeServices.CreateEmployee(model);
             if (response.Employee?.Id != -1)
             {
                 return CreatedAtAction(nameof(CreateEmployee), response);

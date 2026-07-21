@@ -9,5 +9,6 @@
         public string Role { get; set; }
         public DateTime CreatedAt { get; set; }
         public int Status { get; set; }
+        public List<string> Permissions { get; set; } = new();
     }
 }

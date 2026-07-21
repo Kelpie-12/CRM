@@ -51,5 +51,59 @@ namespace CRM.Repositories.Implementations
             }
             return permissions;
         }
+
+        public async Task<ICollection<string>> GetEmployeePermissions(string companyName, int employeeId)
+        {
+            List<string> permissions = new List<string>();
+
+            using (SqlConnection con = CreateConnection(companyName))
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText =
+                        "SELECT [Permission].[Name] FROM [Permissions],[Permission] " +
+                        "WHERE [Permissions].EmployeeId=@EmployeeId AND [Permissions].PermissionId=[Permission].Id";
+                    cmd.Parameters.AddWithValue("EmployeeId", employeeId);
+
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    while (reader.Read())
+                    {
+                        permissions.Add(reader.GetString(0));
+                    }
+                }
+                con.Close();
+            }
+
+            return permissions;
+        }
+
+        public async Task SaveEmployeePermissions(string companyName, int employeeId, ICollection<string> permissions)
+        {
+            using (SqlConnection con = CreateConnection(companyName))
+            {
+                con.Open();
+
+                using (SqlCommand deleteCmd = con.CreateCommand())
+                {
+                    deleteCmd.CommandText = "DELETE FROM [Permissions] WHERE EmployeeId=@EmployeeId";
+                    deleteCmd.Parameters.AddWithValue("EmployeeId", employeeId);
+                    await deleteCmd.ExecuteNonQueryAsync();
+                }
+
+                foreach (var permission in permissions.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    using SqlCommand insertCmd = con.CreateCommand();
+                    insertCmd.CommandText =
+                        "INSERT INTO [Permissions] (EmployeeId, PermissionId) " +
+                        "SELECT @EmployeeId, Id FROM [Permission] WHERE [Name]=@PermissionName";
+                    insertCmd.Parameters.AddWithValue("EmployeeId", employeeId);
+                    insertCmd.Parameters.AddWithValue("PermissionName", permission);
+                    await insertCmd.ExecuteNonQueryAsync();
+                }
+
+                con.Close();
+            }
+        }
     }
 }

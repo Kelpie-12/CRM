@@ -10,18 +10,20 @@ namespace CRM.Services.Implementations
     public class EmployeeServices : IEmployeeServices
     {
         private readonly IEmployeeRepository _employeeRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly IPermissionsRepository _permissionsRepository;
 
-        public EmployeeServices(IEmployeeRepository employeeRepository, IUserRepository userRepository)
+        public EmployeeServices(
+            IEmployeeRepository employeeRepository,
+            IPermissionsRepository permissionsRepository)
         {
             _employeeRepository = employeeRepository;
-            _userRepository = userRepository;
+            _permissionsRepository = permissionsRepository;
         }
 
         public async Task<EmployeeResponse> CreateEmployee(EmployeeModel model)
         {
-            var creatorRole = model.User?.Role ?? string.Empty;
-            var targetRole = model.Employee?.Role ?? string.Empty;
+            string creatorRole = model.User?.Role ?? string.Empty;
+            string targetRole = model.Employee?.Role ?? string.Empty;
 
             if (!CanAssignRole(creatorRole, targetRole))
             {
@@ -43,53 +45,29 @@ namespace CRM.Services.Implementations
                 };
             }
 
-            var newUser = new UserDto
-            {
-                UserName = model.Employee.UserName,
-                FirstName = model.Employee.FirstName,
-                LastName = model.Employee.LastName,
-                Password = string.IsNullOrWhiteSpace(model.Employee.Password)
-                    ? model.Employee.UserName + "123"
-                    : model.Employee.Password
-            };
-
-            var createdUser = await _userRepository.CreateUser(newUser);
-            if (createdUser.Id == -1)
-            {
-                return new EmployeeResponse
-                {
-                    Message = "Username already exists.",
-                    Error = "error_username_exists",
-                    Employee = new Employee { Id = -1 }
-                };
-            }
-
-            var linked = await _employeeRepository.LinkCompanyRole(
-                createdUser.Id ?? -1,
-                model.Company.Id,
-                targetRole);
-
-            if (!linked)
-            {
-                return new EmployeeResponse
-                {
-                    Message = "Failed to assign company role.",
-                    Error = "error_role_assignment_failed",
-                    Employee = new Employee { Id = -1 }
-                };
-            }
-
-            return await _employeeRepository.CreateEmployee(
+            EmployeeResponse response = await _employeeRepository.CreateEmployee(
                 model.Company,
                 model.Employee,
-                model.User,
-                createdUser.Id ?? -1);
+                model.User);
+
+            if (response.Employee?.Id != -1)
+            {
+                await _permissionsRepository.SaveEmployeePermissions(
+                    model.Company.Name,
+                    response.Employee.Id,
+                    model.Employee.Permissions ?? new List<string>());
+
+                response.Employee.Permissions = model.Employee.Permissions?.ToList() ?? new List<string>();
+            }
+            
+
+            return response;
         }
 
         public async Task<EmployeeResponse> UpdateEmployee(EmployeeModel model)
         {
-            var creatorRole = model.User?.Role ?? string.Empty;
-            var targetRole = model.Employee?.Role ?? string.Empty;
+            string creatorRole = model.User?.Role ?? string.Empty;
+            string targetRole = model.Employee?.Role ?? string.Empty;
 
             if (!CanAssignRole(creatorRole, targetRole))
             {
@@ -101,7 +79,22 @@ namespace CRM.Services.Implementations
                 };
             }
 
-            return await _employeeRepository.UpdateEmployee(model.Company, model.Employee, model.User);
+            EmployeeResponse response = await _employeeRepository.UpdateEmployee(
+                model.Company,
+                model.Employee,
+                model.User);
+
+            if (response.Employee?.Id != -1)
+            {
+                await _permissionsRepository.SaveEmployeePermissions(
+                    model.Company.Name,
+                    response.Employee.Id,
+                    model.Employee.Permissions ?? new List<string>());
+
+                response.Employee.Permissions = model.Employee.Permissions?.ToList() ?? new List<string>();
+            }
+
+            return response;
         }
 
         public async Task<Task> DeleteEmployee(EmployeeModel model)
@@ -111,7 +104,16 @@ namespace CRM.Services.Implementations
 
         public async Task<ICollection<Employee>> GetAll(CompanyDto company, int status)
         {
-            return await _employeeRepository.GetAll(company, status);
+            ICollection<Employee> employees = await _employeeRepository.GetAll(company, status);
+
+            foreach (Employee employee in employees)
+            {
+                employee.Permissions = (await _permissionsRepository.GetEmployeePermissions(
+                    company.Name,
+                    employee.Id)).ToList();
+            }
+
+            return employees;
         }
 
         private static bool CanAssignRole(string creatorRole, string targetRole)

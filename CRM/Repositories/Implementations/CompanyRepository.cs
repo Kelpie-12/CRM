@@ -179,11 +179,18 @@ namespace CRM.Repositories.Implementations
                            " set @Status=(select [Status].[Id] from [Status] where [Status].[Name]='Active')" +
                            " set @eId =(select Id from Employee where UserId=@UserId) " +
 
+                           " insert into FiscalDocumentNumber (ItemId,Count,OperationType,Amount,Status) " +
+                           " values (@ItemId," +
+                           "         @Count," +
+                           "         (select Id from OperationType where OperationType.Name='Income')," +
+                           "         @Count*(select Price from Storage where Storage.Id=@ItemId)," +
+                           "         @Status)" +
+
                            " insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status]) " +
                            " values ((select Id from Cashbox where Cashbox.Name=@CashboxName)," +
                            "         (select Id from OperationType where OperationType.Name='Income')," +
                            "         @Count*(select Price from Storage where Storage.Id=@ItemId)," +
-                           "         CAST(GETDATE() as int),@Status);" +
+                           "         (SELECT SCOPE_IDENTITY()),@Status);" +
 
                            " INSERT INTO [dbo].[Sales] ([EmployeeId],[Status],[ItemId],[ItemArticle],[Count],[ClientId],[TransactionsId]) " +
                            " VALUES (@eId," +
@@ -254,7 +261,14 @@ namespace CRM.Repositories.Implementations
                         "		set @transId =(select Sales.TransactionsId from Sales where Sales.Id=@SaleId)                                 " +
                         "		set @amount =(select Amount from Transactions where Transactions.Id=@transId)                                 " +
                         "		set @itemId =(select Sales.ItemId from Sales where Sales.Id=@SaleId)                                          " +
-                        "		                                                                                                              " +
+                        "		" +
+                        "       insert into FiscalDocumentNumber (ItemId,OperationType,Count,Amount,Status) " +
+                        "       values (@itemId," +
+                        "               (select Id from OperationType where OperationType.Name='Outcome')," +
+                        "               (select Sales.[Count] from Sales where Sales.Id=@SaleId)," +
+                        "               @amount," +
+                        "               (select [Status].Id from [Status] where [Status].[Name]='Canceled'))  " +
+                        "                                                                                                            " +
                         "		update Storage                                                                                                " +
                         "		set Storage.[Count]=Storage.[Count]+(select Sales.[Count] from Sales where Sales.Id=@SaleId)                       " +
                         "		where Storage.Id =(@itemId)  " +
@@ -263,12 +277,13 @@ namespace CRM.Repositories.Implementations
                         "       set Sales.[Status]=(select [Status].Id from [Status] where [Status].[Name]='Canceled')" +
                         "       where Sales.Id =(@SaleId)   " +
                         "                                                                                                        " +
-                        "		insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status])                       " +
+                        "		insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status],CreatedAt)                       " +
                         "		values ((select Id from Cashbox where Cashbox.Name=@CashboxName),                                             " +
                         "				(select Id from OperationType where OperationType.Name='Outcome'),                                    " +
                         "				@amount,                                                                                              " +
-                        "				CAST(GETDATE() as int),                                                                               " +
-                        "				(select [Status].[Id] from [Status] where [Status].[Name]='Active'));                                 " +
+                        "				(SELECT SCOPE_IDENTITY()),                                                                               " +
+                        "				(select [Status].[Id] from [Status] where [Status].[Name]='Active')," +
+                        "               GETDATE());                                 " +
                         "                                                                                                                     " +
                         "                                                                                                                     " +
                         "		 declare @balanceNow as int                                                                                   " +
@@ -317,7 +332,9 @@ namespace CRM.Repositories.Implementations
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText = "use [CRM] SELECT * FROM [Company] WHERE [Company].CreatedByUserId=@UserId ";
+                    cmd.CommandText = "select Company.Id,Company.Name,Company.CreatedAt,Company.Status " +
+                                      "from Company,CompanyRole " +
+                                      "where Company.Id=CompanyRole.CompanyId and CompanyRole.UserId=@UserId";
                     // не верный запрос
                     cmd.Parameters.AddWithValue("UserId", user.Id);
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
@@ -342,9 +359,31 @@ namespace CRM.Repositories.Implementations
             return res;
         }
 
-        public Task<string> SetRole(User user)
+        public async Task<string> SetRole(CompanyDto company, EmployeeDto employee, UserDto user)
         {
-            throw new NotImplementedException();
+            string res = "Ok";
+            using (SqlConnection con = CreateConnection())
+            {
+                con.Open();
+                using (SqlCommand cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = "insert into CompanyRole (UserId,CompanyId,Role) " +
+                        "values (@UserId,@CompanyId,(select Id from Role where [Name]=@Role))";
+                    cmd.Parameters.AddWithValue("@UserId", user.Id);
+                    cmd.Parameters.AddWithValue("@CompanyId", company.Id);
+                    cmd.Parameters.AddWithValue("@Role", employee.Role);
+                    try
+                    {
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        res = e.Message;
+                    }
+                }
+
+            }
+            return await Task.FromResult(res);
         }
 
         public Task<string> UpdateCompany(Company company)

@@ -136,7 +136,7 @@ namespace CRM.Repositories.Implementations
                 {
                     cmd.CommandText = "select  [Storage].Article,[Storage].Name," +
                                       "[Storage].Count,[Storage].Price,[Storage].[Status],[Storage].Id," +
-                                      "[Storage].PurchasePrice " +
+                                      "[Storage].PurchasePrice,[Storage].CreatedAt " +
                                       "from [Storage]" +
                                       "where [Storage].Status=@Status";
 
@@ -157,6 +157,7 @@ namespace CRM.Repositories.Implementations
                             item.Status = reader.GetInt32(4);
                             item.Id = reader.GetInt32(5);
                             item.PurchasePrice = reader.GetDecimal(6);
+                            item.CreatedAt = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7);
                             res.Add(item);
                         }
                     }

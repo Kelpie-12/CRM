@@ -11,7 +11,7 @@ namespace CRM.Repositories
         Task<CompanyResponse> CreateCompany(CompanyDto company, UserDto user);
         Task<string> UpdateCompany(Company company);
         Task<string> DeleteCompany(int id);
-        Task<string> SetRole(User user);
+        Task<string> SetRole(CompanyDto company, EmployeeDto employee, UserDto user);
       
 
     }

@@ -1,51 +1,43 @@
-﻿
+﻿using CRM.Model.Data;
+using CRM.Model.DTO;
+using CRM.Repositories;
+
 namespace CRM.Services.Implementations
 {
     public class SettingServices : ISettingServices
     {
-        public Task<bool> CreateEmployee(string data)
+        private readonly ISettingsRepository _settingsRepository;
+
+        public SettingServices(ISettingsRepository settingsRepository)
         {
-            throw new NotImplementedException();
+            _settingsRepository = settingsRepository;
         }
 
-        public Task<bool> DeleteEmployee(string data)
+        public Task<CompanySettingsDto> GetSettings(int companyId, string companyName)
         {
-            throw new NotImplementedException();
+            return _settingsRepository.GetSettings(companyId, companyName);
         }
 
-        public Task<bool> EditingEmployee(string data)
+        public Task<bool> UpdateCompanyName(UpdateCompanySettingsModel model)
         {
-            throw new NotImplementedException();
+            return _settingsRepository.UpdateCompanyName(
+                model.Company.Id??-1,
+                model.Company.Name,
+                model.CompanyName ?? model.Company.Name);
         }
 
-        public Task<bool> EditingInfoAboutEnterprise(string data)
+        public Task<bool> UpdateCompanyDescription(UpdateCompanySettingsModel model)
         {
-            throw new NotImplementedException();
+            return _settingsRepository.UpdateCompanyDescription(
+                model.Company.Name,
+                model.Description ?? string.Empty);
         }
 
-        public Task<bool> EditingSettings(string data)
+        public Task<bool> UpdateConnectedCashbox(UpdateCompanySettingsModel model)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<string> GetInfoAboutEnterprise(string data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<string> GetInfoListSales(string data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<string> GetInfoSetting(string data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> RecoveryEmployee(string data)
-        {
-            throw new NotImplementedException();
+            return _settingsRepository.UpdateConnectedCashbox(
+                model.Company.Name,
+                model.CashboxId ?? 0);
         }
     }
 }

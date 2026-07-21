@@ -8,11 +8,14 @@ namespace CRM.Repositories.Implementations
 {
     public class EmployeeRepository : BaseRepository, IEmployeeRepository
     {
-        public EmployeeRepository(IConfiguration configuration) : base(configuration)
+        private readonly ICompanyRepository _companyRepository;
+        public EmployeeRepository(IConfiguration configuration, ICompanyRepository companyRepository) : base(configuration)
         {
+            _companyRepository = companyRepository;
+
         }
 
-        public async Task<EmployeeResponse> CreateEmployee(CompanyDto company, EmployeeDto employee, UserDto user, int newUserId)
+        public async Task<EmployeeResponse> CreateEmployee(CompanyDto company, EmployeeDto employee, UserDto user)
         {
             EmployeeResponse response = new EmployeeResponse()
             {
@@ -21,6 +24,14 @@ namespace CRM.Repositories.Implementations
                 Employee = new Employee()
             };
 
+            UserDto addEmployee  = await GetUserIdByUsername(employee.UserName);
+            if (addEmployee.Id == -1)
+            {
+                response.Message = "Username not exist";
+                response.Error = "error_username_not_exist";
+                response.Employee.Id = -1;
+                return response;
+            }
             using (SqlConnection con = CreateConnection(company.Name))
             {
                 con.Open();
@@ -31,20 +42,21 @@ namespace CRM.Repositories.Implementations
                         "BEGIN " +
                         "DECLARE @RoleId INT; " +
                         "SET @RoleId = (SELECT TOP 1 [Role].Id FROM [Role] WHERE [Role].[Name]=@RoleName); " +
-                        "INSERT INTO [Employee] ([FirstName],[LastName],[UserId],[RoleId],[Status]) " +
-                        "VALUES (@FirstName,@LastName,@UserId,@RoleId,@Status); " +
+                        "INSERT INTO [Employee] ([FirstName],[LastName],[UserId],[RoleId],[Status],CreatedByUserId) " +
+                        "VALUES (@FirstName,@LastName,@UserId,@RoleId,@Status,@CUI); " +
                         "SELECT Employee.Id,Employee.FirstName,Employee.LastName,Employee.CreatedAt,Employee.Status,[Role].[Name],Employee.UserId " +
                         "FROM [Employee] " +
                         "INNER JOIN [Role] ON [Role].Id = Employee.RoleId " +
-                        "WHERE Employee.UserId=@UserId " +
+                        "WHERE Employee.UserId=@UserId " +                        
                         "END " +
                         "ELSE BEGIN " +
                         "SELECT 'Employee already exist' AS Result; " +
                         "END ";
 
-                    cmd.Parameters.AddWithValue("FirstName", employee.FirstName);
-                    cmd.Parameters.AddWithValue("LastName", employee.LastName);
-                    cmd.Parameters.AddWithValue("UserId", newUserId);
+                    cmd.Parameters.AddWithValue("FirstName", addEmployee.FirstName);
+                    cmd.Parameters.AddWithValue("LastName", addEmployee.LastName);
+                    cmd.Parameters.AddWithValue("UserId", addEmployee.Id);
+                    cmd.Parameters.AddWithValue("CUI",user.Id);
                     cmd.Parameters.AddWithValue("RoleName", employee.Role);
                     cmd.Parameters.AddWithValue("Status", Status.Active);
 
@@ -70,6 +82,7 @@ namespace CRM.Repositories.Implementations
                                     response.Employee.Status = reader.GetInt32(4);
                                     response.Employee.Role = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
                                     response.Employee.UserId = reader.GetInt32(6);
+
                                 }
                             }
                         }
@@ -80,40 +93,61 @@ namespace CRM.Repositories.Implementations
                         response.Error = "error_create_employee";
                         response.Employee.Id = -1;
                     }
+
+                    if (response.Employee.Id != -1)
+                    {
+                        await _companyRepository.SetRole(company, employee, addEmployee);
+                    }
                 }
                 con.Close();
             }
-
             return response;
         }
-
-        public async Task<bool> LinkCompanyRole(int userId, int companyId, string roleName)
+        private async Task<UserDto> GetUserIdByUsername(string username)
         {
+            UserDto res = new UserDto()
+            {
+                Id = -1
+            };
             using (SqlConnection con = CreateConnection())
             {
                 con.Open();
                 using (SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText =
-                        "USE [CRM] " +
-                        "IF NOT EXISTS (SELECT 1 FROM CompanyRole WHERE UserId=@UserId AND CompanyId=@CompanyId) " +
-                        "BEGIN " +
-                        "DECLARE @RoleId INT; " +
-                        "SET @RoleId = (SELECT TOP 1 Id FROM [Role] WHERE [Name]=@RoleName); " +
-                        "INSERT INTO CompanyRole (UserId, CompanyId, [Role]) VALUES (@UserId, @CompanyId, @RoleId); " +
-                        "SELECT 1 AS Result; " +
-                        "END " +
-                        "ELSE BEGIN SELECT 0 AS Result; END";
-
-                    cmd.Parameters.AddWithValue("UserId", userId);
-                    cmd.Parameters.AddWithValue("CompanyId", companyId);
-                    cmd.Parameters.AddWithValue("RoleName", roleName);
-
-                    object? result = await cmd.ExecuteScalarAsync();
-                    return result != null && Convert.ToInt32(result) == 1;
+                    cmd.CommandText = "select [User].[Id],[User].FirstName,[User].LastName,[User].UserName from [User] where [User].UserName=@username";
+                    cmd.Parameters.AddWithValue("@username", username);
+                    try
+                    {
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                if (reader.IsDBNull(0))
+                                {
+                                    res.Id = -1;
+                                }
+                                else
+                                {
+                                    res.Id =reader.GetInt32(0);
+                                    res.FirstName = reader.GetString(1);
+                                    res.LastName = reader.GetString(2);
+                                    res.UserName = reader.GetString(3);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        res.Id = -1;                     
+                    }
                 }
+                con.Close();
             }
+            return res;
         }
+
+     
 
         public async Task<EmployeeResponse> UpdateEmployee(CompanyDto company, EmployeeDto employee, UserDto user)
         {
