@@ -88,9 +88,9 @@ namespace CRM.Controllers
         [HttpGet]
         [Route("GetAll/{companyId}/{companyName}")]
         [Authorize(Policy = Permissions.Read)]
-        public async Task<IActionResult> GetAll(int companyId, string companyName, [FromQuery] int status = Status.Active)
+        public async Task<IActionResult> GetAll(int companyId, string companyName, [FromQuery] int status = Status.Active, [FromQuery] string? statusName = null)
         {
-            ICollection<Item> items = await _storageServices.GetAll(new CompanyDto { Name = companyName, Id = companyId }, status);
+            ICollection<Item> items = await _storageServices.GetAll(new CompanyDto { Name = companyName, Id = companyId }, status, statusName);
             return StatusCode(StatusCodes.Status200OK, items);
 
             //return  Ok("GETALLL");

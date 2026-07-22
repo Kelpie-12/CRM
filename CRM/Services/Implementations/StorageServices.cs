@@ -39,9 +39,9 @@ namespace CRM.Services.Implementations
            return false;
         }
 
-        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status)
+        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status, string? statusName = null)
         {
-            return await _storageRepository.GetAll(company, status);
+            return await _storageRepository.GetAll(company, status, statusName);
         }
 
         public Task<string> GetInfoArrivalItem(string data)

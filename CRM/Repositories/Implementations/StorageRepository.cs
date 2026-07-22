@@ -73,12 +73,13 @@ namespace CRM.Repositories.Implementations
                                     response.Item.Price = reader.GetDecimal(4);
                                     response.Item.PurchasePrice = reader.GetDecimal(5);
                                     response.Item.Status = reader.GetInt32(6);
-                                    return response;
                                 }
-                                response.Item.Id = -1;
-                                response.Message = "Item already exist";
-                                response.Error = "error_item_already_exist";
-
+                                else
+                                {
+                                    response.Item.Id = -1;
+                                    response.Message = "Item already exist";
+                                    response.Error = "error_item_already_exist";
+                                }
                             }
                         }
                     }
@@ -87,11 +88,12 @@ namespace CRM.Repositories.Implementations
                         response.Error = e.Message;
                         response.Message = "Created item was fail! Check data!";
                         response.Item.Id = -1;
-                        //throw;
                     }
-                    //cmd.ExecuteNonQuery(); 
 
                 }
+
+               
+
                 con.Close();
             }
 
@@ -125,22 +127,34 @@ namespace CRM.Repositories.Implementations
             //  return Task.FromResult(false);
         }
 
-        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status)
+        public async Task<ICollection<Item>> GetAll(CompanyDto company, int status, string? statusName = null)
         {
 
             List<Item> res = new List<Item>();
             using (SqlConnection con = CreateConnection(company.Name))
             {
-                con.Open();
+                con.Open();           
+
                 using (SqlCommand cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "select  [Storage].Article,[Storage].Name," +
                                       "[Storage].Count,[Storage].Price,[Storage].[Status],[Storage].Id," +
-                                      "[Storage].PurchasePrice,[Storage].CreatedAt " +
-                                      "from [Storage]" +
-                                      "where [Storage].Status=@Status";
+                                      "[Storage].PurchasePrice,[Storage].CreatedAt,[Status].[Name] as StatusName " +
+                                      "from [Storage] " +
+                                      "inner join [Status] on [Status].Id=[Storage].[Status] " +
+                                      "where [Storage].Status=" +
+                                      (string.IsNullOrWhiteSpace(statusName)
+                                          ? "@Status"
+                                          : "(SELECT TOP 1 Id FROM [Status] WHERE [Name]=@StatusName)");
 
-                    cmd.Parameters.AddWithValue("Status", status);
+                    if (string.IsNullOrWhiteSpace(statusName))
+                    {
+                        cmd.Parameters.AddWithValue("Status", status);
+                    }
+                    else
+                    {
+                        cmd.Parameters.AddWithValue("StatusName", statusName);
+                    }
                     //cmd.Parameters.AddWithValue("CompanyId", "-1");
                     SqlDataReader reader = await cmd.ExecuteReaderAsync();
                     //cmd.ExecuteNonQuery(); 
@@ -158,6 +172,7 @@ namespace CRM.Repositories.Implementations
                             item.Id = reader.GetInt32(5);
                             item.PurchasePrice = reader.GetDecimal(6);
                             item.CreatedAt = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7);
+                            item.StatusName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
                             res.Add(item);
                         }
                     }
@@ -247,6 +262,23 @@ namespace CRM.Repositories.Implementations
                         res.Error = "error_update_item";
                         res.Message = e.Message;
                         res.Item.Id = -1;
+                    }
+
+                    if (res.Item.Id != -1 && item.Item.Id.HasValue)
+                    {                      
+
+                        using SqlCommand statusCmd = con.CreateCommand();
+                        statusCmd.CommandText =
+                            "SELECT [Storage].[Status], [Status].[Name] " +
+                            "FROM [Storage] INNER JOIN [Status] ON [Status].Id = [Storage].[Status] " +
+                            "WHERE [Storage].Id = @ItemId";
+                        statusCmd.Parameters.AddWithValue("ItemId", item.Item.Id.Value);
+                        SqlDataReader statusReader = await statusCmd.ExecuteReaderAsync();
+                        if (statusReader.Read())
+                        {
+                            res.Item.Status = statusReader.GetInt32(0);
+                            res.Item.StatusName = statusReader.IsDBNull(1) ? string.Empty : statusReader.GetString(1);
+                        }
                     }
 
                 }

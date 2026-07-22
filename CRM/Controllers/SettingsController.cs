@@ -60,5 +60,7 @@ namespace CRM.Controllers
 
             return Ok(new { success = await _settingServices.UpdateConnectedCashbox(model) });
         }
+
+        //добавить возможноть в настройках компании устанавливать и созавать новые должности с определнными новыми правами
     }
 }

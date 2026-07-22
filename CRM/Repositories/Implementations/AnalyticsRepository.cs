@@ -28,10 +28,37 @@ namespace CRM.Repositories.Implementations
                 con.Close();
             }
 
+            FillSalesChartGaps(analytics, fromDate.Date, toDate.Date);
             analytics.TotalSalesCount = analytics.SalesChart.Sum(point => point.SalesCount);
             analytics.TotalSalesRevenue = analytics.SalesChart.Sum(point => point.Revenue);
 
             return analytics;
+        }
+
+        private static void FillSalesChartGaps(AnalyticsDto analytics, DateTime fromDate, DateTime toDate)
+        {
+            Dictionary<DateTime, SalesChartPointDto> pointsByDate = analytics.SalesChart
+                .ToDictionary(point => point.Date.Date);
+
+            List<SalesChartPointDto> filledChart = new List<SalesChartPointDto>();
+
+            for (DateTime date = fromDate; date <= toDate; date = date.AddDays(1))
+            {
+                if (pointsByDate.TryGetValue(date, out SalesChartPointDto? existingPoint))
+                {
+                    filledChart.Add(existingPoint);
+                    continue;
+                }
+
+                filledChart.Add(new SalesChartPointDto
+                {
+                    Date = date,
+                    SalesCount = 0,
+                    Revenue = 0,
+                });
+            }
+
+            analytics.SalesChart = filledChart;
         }
 
         private static async Task<int> GetConnectedCashboxId(SqlConnection con)

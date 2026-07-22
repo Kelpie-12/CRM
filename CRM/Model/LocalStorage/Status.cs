@@ -6,6 +6,6 @@
         public const int Deleted = 2;   
         public const int Blocked = 3;   
         public const int Closed = 4;   
-        public const int Canceled= 5;   
+        public const int Canceled= 5;      
     }
 }

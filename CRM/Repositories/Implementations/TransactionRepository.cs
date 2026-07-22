@@ -21,7 +21,7 @@ namespace CRM.Repositories.Implementations
                 {
                     cmd.CommandText =
                         "SELECT t.Id, cb.Name, ot.Name, t.Amount, t.FiscalDocumentNumber, " +
-                        "s.CreatedAt, t.Status, st.Name " +
+                        "t.CreatedAt, t.Status, st.Name " +
                         "FROM Transactions t " +
                         "INNER JOIN Cashbox cb ON cb.Id = t.CashboxId " +
                         "INNER JOIN OperationType ot ON ot.Id = t.OperationType " +
@@ -64,7 +64,7 @@ namespace CRM.Repositories.Implementations
                 {
                     cmd.CommandText =
                         "SELECT TOP 1 fd.Id, fd.ItemId, fd.Count, fd.Amount, ot.Name, st.Name, " +
-                        "storage.Name, storage.Article, cb.Name, t.Amount, s.CreatedAt " +
+                        "storage.Name, storage.Article, cb.Name, t.Amount, fd.CreatedAt " +
                         "FROM FiscalDocumentNumber fd " +
                         "LEFT JOIN OperationType ot ON ot.Id = fd.OperationType " +
                         "LEFT JOIN [Status] st ON st.Id = fd.Status " +

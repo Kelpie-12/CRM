@@ -12,7 +12,7 @@ namespace CRM.Services
         Task<bool> ArrivalItem(string data);
         Task<ItemResponse> UpdateItem(ItemModel item);
         Task<bool> DeleteItem(ItemModel item);
-        Task<ICollection<Item>> GetAll(CompanyDto company, int status);
+        Task<ICollection<Item>> GetAll(CompanyDto company, int status, string? statusName = null);
         Task<string> GetInfoItem(string data);
         Task<string> GetInfoWriteOffItem(string data);
         Task<string> GetInfoArrivalItem(string data);

@@ -66,6 +66,8 @@ namespace CRM.Repositories.Implementations
                         response.Sales.Id = -1;
                     }
                 }
+              
+
                 con.Close();
             }
 
@@ -132,6 +134,8 @@ namespace CRM.Repositories.Implementations
                         response.Sales.Id = -1;
                     }
                 }
+
+
                 con.Close();
             }
 

@@ -1,16 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Diagnostics.Metrics;
-using System.Transactions;
-using System.Xml.Linq;
-using Autofac.Core;
+﻿using System.Data.SqlClient;
 using CRM.Model;
 using CRM.Model.Data.Response;
 using CRM.Model.DTO;
-using CRM.Model.LocalStorage;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.SqlServer.Server;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CRM.Repositories.Implementations
 {
@@ -109,11 +100,12 @@ namespace CRM.Repositories.Implementations
 
                 }
                 con.Close();
+                await CreateTriggerStorageStockZero(company);
             }
 
             return response;
         }
-        private async Task<string> CreateTrigger(CompanyDto company)
+        private async Task<string> CreateTriggerStorageStockZero(CompanyDto company)
         {
             string res = "Fail!";
             using (SqlConnection con = CreateConnection(company.Name))
@@ -125,16 +117,21 @@ namespace CRM.Repositories.Implementations
                     {
                         cmd.CommandType = System.Data.CommandType.Text;
                         cmd.CommandText =
-                            "CREATE TRIGGER trg_AfterInsert_Sales " +
-                            "ON Sales " +
-                            "AFTER INSERT AS BEGIN " +
-                            "SET NOCOUNT ON; " +
-                            "declare @count as int " +
-                            "set @count=(select [Count] from inserted) " +
-                            "update Storage " +
-                            "set Storage.[Count]=Storage.[Count]-@count " +
-                            "where Storage.Id =(select ItemId from inserted)  " +
-                            "END;";
+                            "CREATE trigger trg_Storage_StockZero                        " +
+                            "ON Storage                                                                              " +
+                            "AFTER UPDATE AS BEGIN                                                                   " +
+
+                            "    SET NOCOUNT ON;                                                                     " +
+                            "    declare @count as int                                           " +
+
+                            "    set @count = (select[Count] from inserted)                                          " +
+                            "	 if @count <= 0                                                                     " +
+                            "    begin                                                                               " +
+                            "        update Storage                                                                  " +
+                            "        set Storage.[Status] = (select top 1 Id from[Status] where[Name] = 'Empty')     " +
+                            "		where Storage.Id = (select Id from inserted)                                     " +
+                            "	end                                                                                  " +
+                            "END; ";
 
                         await cmd.ExecuteNonQueryAsync();
                         res = "Success!";
@@ -172,7 +169,7 @@ namespace CRM.Repositories.Implementations
                            "begin TRANSACTION; " +
                            "declare @countItem int " +
                            "set @countItem=(select [Storage].[Count] from Storage where Storage.Id=@ItemId) " +
-                           "if(@countItem > @Count) " +
+                           "if(@countItem >= @Count) " +
                            " begin " +
                            " declare @eId int " +
                            " declare @Status int " +

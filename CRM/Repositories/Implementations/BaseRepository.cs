@@ -1,4 +1,5 @@
 ﻿using System.Data.SqlClient;
+using CRM.Model.LocalStorage;
 
 namespace CRM.Repositories.Implementations
 {
@@ -23,6 +24,7 @@ namespace CRM.Repositories.Implementations
             //расширить
             return new SqlConnection(_connectionSttring+init+database);
         }
-    
+
+        
     }
 }

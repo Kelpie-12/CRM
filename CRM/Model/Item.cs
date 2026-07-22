@@ -13,6 +13,7 @@ namespace CRM.Model
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         //public string Type { get; set; } 
         public int Status { get; set; } 
+        public string StatusName { get; set; } = string.Empty;
 
 
     }
