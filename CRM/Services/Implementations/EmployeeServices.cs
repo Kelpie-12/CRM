@@ -123,13 +123,23 @@ namespace CRM.Services.Implementations
                 return string.Equals(creatorRole, Roles.Ceo, StringComparison.OrdinalIgnoreCase);
             }
 
-            if (string.Equals(targetRole, Roles.Employee, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(targetRole, Roles.Ceo, StringComparison.OrdinalIgnoreCase))
             {
-                return string.Equals(creatorRole, Roles.Admin, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(creatorRole, Roles.Ceo, StringComparison.OrdinalIgnoreCase);
+                return false;
             }
 
-            return false;
+            if (string.Equals(targetRole, Roles.Employee, StringComparison.OrdinalIgnoreCase))
+            {
+                return IsAdminOrCeo(creatorRole);
+            }
+
+            return IsAdminOrCeo(creatorRole);
+        }
+
+        private static bool IsAdminOrCeo(string creatorRole)
+        {
+            return string.Equals(creatorRole, Roles.Admin, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(creatorRole, Roles.Ceo, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

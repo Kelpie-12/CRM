@@ -1,5 +1,6 @@
 ﻿using CRM.Model;
 using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -61,6 +62,61 @@ namespace CRM.Controllers
             return Ok(new { success = await _settingServices.UpdateConnectedCashbox(model) });
         }
 
-        //добавить возможноть в настройках компании устанавливать и созавать новые должности с определнными новыми правами
+        [HttpPost]
+        [Authorize(Policy = Permissions.Update)]
+        [Route("CreateRole")]
+        public async Task<IActionResult> CreateRole([FromBody] CompanyRoleModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.RoleName))
+            {
+                return BadRequest(new { message = "Position name is required." });
+            }
+
+            CompanyRoleResponse response = await _settingServices.CreateRole(model);
+            if (response.Role == null)
+            {
+                return BadRequest(new { message = response.Message, error = response.Error });
+            }
+
+            return Ok(response);
+        }
+
+        [HttpPut]
+        [Authorize(Policy = Permissions.Update)]
+        [Route("UpdateRole")]
+        public async Task<IActionResult> UpdateRole([FromBody] CompanyRoleModel model)
+        {
+            if (!model.RoleId.HasValue || model.RoleId <= 0)
+            {
+                return BadRequest(new { message = "Position id is required." });
+            }
+
+            CompanyRoleResponse response = await _settingServices.UpdateRole(model);
+            if (response.Role == null)
+            {
+                return BadRequest(new { message = response.Message, error = response.Error });
+            }
+
+            return Ok(response);
+        }
+
+        [HttpDelete]
+        [Authorize(Policy = Permissions.Update)]
+        [Route("DeleteRole")]
+        public async Task<IActionResult> DeleteRole([FromBody] CompanyRoleModel model)
+        {
+            if (!model.RoleId.HasValue || model.RoleId <= 0)
+            {
+                return BadRequest(new { message = "Position id is required." });
+            }
+
+            CompanyRoleResponse response = await _settingServices.DeleteRole(model);
+            if (!string.Equals(response.Error, "none", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = response.Message, error = response.Error });
+            }
+
+            return Ok(response);
+        }
     }
 }

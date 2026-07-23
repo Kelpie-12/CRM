@@ -8,5 +8,7 @@ namespace CRM.Model.DTO
         public int CashboxId { get; set; }
         public string CashboxName { get; set; }
         public ICollection<CashboxDto> Cashboxes { get; set; } = new List<CashboxDto>();
+        public ICollection<CompanyRoleDto> Positions { get; set; } = new List<CompanyRoleDto>();
+
     }
 }

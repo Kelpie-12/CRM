@@ -1,4 +1,5 @@
 ﻿using CRM.Model.Data;
+using CRM.Model.Data.Response;
 using CRM.Model.DTO;
 
 namespace CRM.Services
@@ -9,5 +10,8 @@ namespace CRM.Services
         Task<bool> UpdateCompanyName(UpdateCompanySettingsModel model);
         Task<bool> UpdateCompanyDescription(UpdateCompanySettingsModel model);
         Task<bool> UpdateConnectedCashbox(UpdateCompanySettingsModel model);
+        Task<CompanyRoleResponse> CreateRole(CompanyRoleModel model);
+        Task<CompanyRoleResponse> UpdateRole(CompanyRoleModel model);
+        Task<CompanyRoleResponse> DeleteRole(CompanyRoleModel model);
     }
 }

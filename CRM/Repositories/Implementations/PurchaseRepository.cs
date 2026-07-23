@@ -53,12 +53,17 @@ namespace CRM.Repositories.Implementations
                     "VALUES (@ItemId, @Count, " +
                     "(SELECT TOP 1 OperationType.Id FROM OperationType WHERE OperationType.Name='Outcome'), " +
                     "@TotalAmount, @StatusId); " +
+                    
                     "SET @FiscalDocumentId = SCOPE_IDENTITY(); " +
 
                     "INSERT INTO [Purchase] (EmployeeId, ItemId, ItemArticle, [Count], FiscalDocumentNumber, PurchasePrice, Status) " +
                     "VALUES (@EmployeeId, @ItemId, @Article, @Count, @FiscalDocumentId, @PurchasePrice, @StatusId); " +
                     //???????? amount ?? Amount
-                    "insert into Transactions (CashboxId,OperationType,amount,FiscalDocumentNumber,[Status]) " +
+                    "SELECT Purchase.Id, Purchase.EmployeeId, Purchase.ItemArticle, Purchase.[Count], " +
+                    "Purchase.CreatedAt, Purchase.Status, Purchase.ItemId, Purchase.PurchasePrice, Purchase.FiscalDocumentNumber " +
+                    "FROM Purchase WHERE Purchase.Id = (Select SCOPE_IDENTITY())" +
+
+                    "insert into Transactions (CashboxId,OperationType,Amount,FiscalDocumentNumber,[Status]) " +
                     "values ((select Id from Cashbox where Cashbox.Name='Main')," +
                     "        (select Id from OperationType where OperationType.Name='Outcome')," +
                     "        @TotalAmount," +
@@ -69,13 +74,11 @@ namespace CRM.Repositories.Implementations
                     "set @balanceNow = (select Cashbox.Balance from Cashbox " +
                     "where Cashbox.Id =(select Id from Cashbox where Cashbox.[Name]=@CashboxName))" +
 
-                    "update Cashbox set Cashbox.Balance=@balanceNow -(@Count*(select Price from Storage where Storage.Id=@ItemId))" +
+                    "update Cashbox set Cashbox.Balance=@balanceNow -@TotalAmount " +
                     "where Cashbox.Id =(select Id from Cashbox where Cashbox.[Name]=@CashboxName)" +
 
                     "UPDATE Storage SET Storage.[Count] = Storage.[Count] + @Count WHERE Storage.Id=@ItemId; " +
-                    "SELECT Purchase.Id, Purchase.EmployeeId, Purchase.ItemArticle, Purchase.[Count], " +
-                    "Purchase.CreatedAt, Purchase.Status, Purchase.ItemId, Purchase.PurchasePrice, Purchase.FiscalDocumentNumber " +
-                    "FROM Purchase WHERE Purchase.Id = SCOPE_IDENTITY(); " +
+                    
                     "END " +
                     "COMMIT;";
 
